@@ -130,14 +130,14 @@ export async function log(args: string[]): Promise<void> {
     let hasEmbedding = false;
     try {
       const { generateEmbedding } = await import("../embeddings");
-      const emb = await generateEmbedding(summary);
+      const emb = await generateEmbedding(fullSummary);
       hasEmbedding = !!emb;
     } catch {}
 
     // 5. Save
     const filepath = saveSession(
       branch,
-      summary,
+      fullSummary,
       diff.stats,
       { tool: contextTool, customName: sessionName },
       hasEmbedding ? { vector: [], model: "", generated: "" } : null
