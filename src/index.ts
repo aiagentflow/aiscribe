@@ -19,6 +19,11 @@ async function main() {
       await ensureConfig();
       await log(args.slice(1));
       break;
+    case "search":
+      await ensureConfigOrWarn();
+      const { search } = await import("./commands/search");
+      await search(args.slice(1));
+      break;
     case "setup":
       if (args.includes("--reconfigure")) {
         const config = await runOnboarding();
@@ -95,6 +100,7 @@ aiscribe - Your AI's scribe. Every session, recorded.
 Usage:
   aiscribe log              Journal the current git diff as a session
   aiscribe log -c           Also capture AI tool prompt history
+  aiscribe search <query>   Search sessions by meaning or keyword
   aiscribe setup            Generate Docker + database + web UI files
   aiscribe setup --reconfigure  Change LLM provider or API key
   aiscribe server           Start the web UI server (localhost:3848)
@@ -103,6 +109,7 @@ Usage:
 Examples:
   aiscribe log              Summarize and store current changes
   aiscribe log -c           Include Claude Code/Cursor/Codex context
+  aiscribe search payment   Find sessions related to payment code
   aiscribe server           Start the session book web UI
 
 Configuration:

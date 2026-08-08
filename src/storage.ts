@@ -2,6 +2,8 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 
+import type { EmbeddingData } from "./embeddings";
+
 function aiscribeDir(): string {
   return path.join(process.cwd(), ".aiscribe");
 }
@@ -12,6 +14,10 @@ function sessionsDir(): string {
 
 function indexFile(): string {
   return path.join(aiscribeDir(), "index.json");
+}
+
+function embeddingsDir(): string {
+  return path.join(aiscribeDir(), "embeddings");
 }
 
 export interface SessionEntry {
@@ -53,7 +59,8 @@ export function saveSession(
   branch: string,
   summary: string,
   stats: { filesChanged: number; insertions: number; deletions: number },
-  meta?: { tool: string | null }
+  meta?: { tool: string | null },
+  embedding?: EmbeddingData | null
 ): string {
   ensureDir(sessionsDir());
 
@@ -90,6 +97,13 @@ ${summary}
   };
 
   updateIndex(entry);
+
+  // Save embedding if generated
+  if (embedding) {
+    ensureDir(embeddingsDir());
+    const embPath = path.join(embeddingsDir(), `${id}.json`);
+    fs.writeFileSync(embPath, JSON.stringify(embedding, null, 2), "utf-8");
+  }
 
   return filepath;
 }

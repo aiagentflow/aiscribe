@@ -1,9 +1,10 @@
 ---
 id: TASK-2
 title: 'Phase 4: Vector embeddings + semantic search'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-08-08 12:34'
+updated_date: '2026-08-08 12:47'
 labels: []
 dependencies: []
 ordinal: 2000

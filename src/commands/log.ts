@@ -58,13 +58,21 @@ export async function log(args: string[]): Promise<void> {
     const userPrompt = buildUserPrompt(branch, diff.files, diff.stats, diff.diff);
     const fullUserPrompt = contextSection ? userPrompt + "\n" + contextSection : userPrompt;
     const summary = await generateSummary(SYSTEM_PROMPT, fullUserPrompt);
-
     spinner.stop("Summary generated");
 
-    // 4. Save to disk
+    // 4. Generate embedding (optional, non-blocking)
+    let embedding = null;
+    try {
+      const { generateEmbedding } = await import("../embeddings");
+      embedding = await generateEmbedding(summary);
+    } catch {
+      // Embeddings are optional
+    }
+
+    // 5. Save to disk
     const filepath = saveSession(branch, summary, diff.stats, {
       tool: withContext ? (await captureContext(process.cwd())).tool : null,
-    });
+    }, embedding);
 
     console.log("");
     console.log(green("  Session recorded!"));
