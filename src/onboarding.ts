@@ -11,6 +11,10 @@ export interface SavedConfig {
   apiKey: string;
   model?: string;
   baseUrl?: string;
+  remoteUrl?: string;
+  remoteEnabled?: boolean;
+  remoteLastSync?: string | null;
+  remoteErrors?: number;
 }
 
 const CONFIG_PATH = path.join(os.homedir(), ".aiscribe", "config.json");

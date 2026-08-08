@@ -185,6 +185,15 @@ export async function log(args: string[]): Promise<void> {
       console.log("");
       console.log(green("  Session recorded!"));
       console.log(dim("  " + filepath));
+
+      // Git remote backup (non-blocking)
+      try {
+        const { pushSession } = await import("../remote");
+        const projectName = path.basename(process.cwd());
+        const pushed = await pushSession(filepath, projectName);
+        if (pushed) console.log(dim("  Synced to remote repo."));
+      } catch {}
+
       console.log("");
       console.log(dim("  View: ") + "cat " + filepath);
       console.log(dim("  Web:  ") + "aiscribe server");

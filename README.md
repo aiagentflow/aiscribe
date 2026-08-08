@@ -82,6 +82,7 @@ Implemented Stripe refund processing with webhook support...
 | `aiscribe watch` | Auto-detect session completion |
 | `aiscribe export --format json` | Export sessions |
 | `aiscribe sync` | Push to server/DB |
+| `aiscribe remote set <url>` | Configure git backup repo |
 | `aiscribe server` | Start web UI on `localhost:3848` |
 | `aiscribe doctor` | Validate your setup |
 | `aiscribe setup` | Docker files or reconfigure provider |

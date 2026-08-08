@@ -70,6 +70,9 @@ async function main() {
       const { sync } = await import("./commands/sync");
       await sync(args.slice(1));
       break;
+    case "remote":
+      await runRemote(args.slice(1));
+      break;
     case "export":
       const { exportSessions } = await import("./commands/export");
       await exportSessions(args.slice(1));
@@ -127,6 +130,30 @@ async function runServer(args: string[]) {
   await startServer(port, isDocker);
 }
 
+async function runRemote(args: string[]) {
+  const { setRemote, disableRemote, remoteStatus } = await import("./remote");
+  const sub = args[0];
+
+  if (sub === "set" && args[1]) {
+    await setRemote(args[1]);
+  } else if (sub === "disable") {
+    await disableRemote();
+  } else {
+    const status = remoteStatus();
+    console.log("");
+    console.log(`  Remote: ${status.configured ? status.url : "not configured"}`);
+    if (status.configured) {
+      console.log(`  Last sync: ${status.lastSync || "never"}`);
+      console.log(`  Errors: ${status.errors}`);
+    }
+    console.log("");
+    console.log("  Commands:");
+    console.log("    aiscribe remote set <git-url>   Configure backup repo");
+    console.log("    aiscribe remote disable         Disable remote backup");
+    console.log("");
+  }
+}
+
 // ── Help ──
 
 function showGlobalHelp() {
@@ -142,6 +169,7 @@ function showGlobalHelp() {
     hotspots    Show files that change most often
     history     Show session timeline for a file
     context     Export session history for AI agents
+    remote      Configure git remote backup repo
     status      Show active AI coding sessions
     watch       Watch for AI sessions and auto-capture
     export      Export sessions in JSON/CSV/AI format
