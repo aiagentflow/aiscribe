@@ -52,15 +52,26 @@ export function detectProvider(): ProviderName {
   const explicit = process.env.AISCRIBE_PROVIDER as ProviderName | undefined;
   if (explicit && Object.keys(DEFAULTS).includes(explicit)) return explicit;
 
-  const key = process.env.AISCRIBE_API_KEY ?? process.env.ANTHROPIC_API_KEY ?? process.env.OPENAI_API_KEY;
-  if (key) return "openrouter"; // Best default — one key, all models
+  // Detect by which API key is set
+  if (process.env.AISCRIBE_API_KEY) return "openrouter";
+  if (process.env.ANTHROPIC_API_KEY) return "anthropic";
+  if (process.env.OPENAI_API_KEY) return "openai";
 
-  // Check if Ollama is reachable
-  if (process.env.OLLAMA_HOST || process.env.ANTHROPIC_API_KEY === undefined) {
-    // Will try Ollama as last resort
+  // Fallback to Ollama if no keys
+  return "ollama";
+}
+
+function getApiKey(provider: ProviderName): string | undefined {
+  switch (provider) {
+    case "openrouter":
+      return process.env.AISCRIBE_API_KEY;
+    case "anthropic":
+      return process.env.AISCRIBE_API_KEY || process.env.ANTHROPIC_API_KEY;
+    case "openai":
+      return process.env.AISCRIBE_API_KEY || process.env.OPENAI_API_KEY;
+    case "ollama":
+      return undefined; // No key needed
   }
-
-  return "openrouter";
 }
 
 // ── Public API ──
@@ -71,7 +82,16 @@ export async function generateSummary(
 ): Promise<string> {
   const provider = detectProvider();
   const model = process.env.AISCRIBE_MODEL || DEFAULTS[provider].model;
-  const apiKey = process.env.AISCRIBE_API_KEY;
+  const apiKey = getApiKey(provider);
+
+  // Validate key for non-Ollama providers
+  if (provider !== "ollama" && !apiKey) {
+    throw new Error(
+      `No API key found for ${provider}.\n` +
+      `Set AISCRIBE_API_KEY (for OpenRouter) or ANTHROPIC_API_KEY or OPENAI_API_KEY.\n` +
+      `Or use Ollama: AISCRIBE_PROVIDER=ollama`
+    );
+  }
 
   const messages: ChatMessage[] = [
     { role: "system", content: systemPrompt },
@@ -82,9 +102,9 @@ export async function generateSummary(
     case "openrouter":
       return openRouterChat(messages, { apiKey, model, baseUrl: DEFAULTS.openrouter.baseUrl });
     case "anthropic":
-      return anthropicChat(messages, { apiKey: apiKey || process.env.ANTHROPIC_API_KEY, model });
+      return anthropicChat(messages, { apiKey, model });
     case "openai":
-      return openAIChat(messages, { apiKey: apiKey || process.env.OPENAI_API_KEY, model });
+      return openAIChat(messages, { apiKey, model });
     case "ollama":
       return ollamaChat(messages, { model });
     default:
