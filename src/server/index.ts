@@ -26,6 +26,7 @@ interface SessionListItem {
   id: string;
   date: string;
   branch: string;
+  project: string;
   filesChanged: number;
   insertions: number;
   deletions: number;
@@ -100,6 +101,7 @@ function toListItem(s: SessionData): SessionListItem {
     id: s.id,
     date: s.date,
     branch: s.branch,
+    project: (s as any).project || path.basename(process.cwd()),
     filesChanged: s.filesChanged,
     insertions: s.insertions,
     deletions: s.deletions,

@@ -26,6 +26,7 @@ h1{font-size:1.5rem;font-weight:600;color:#f0f6fc}
 .card-snippet{font-size:0.85rem;color:#8b949e;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .badge{font-size:0.7rem;padding:2px 8px;border-radius:12px;white-space:nowrap}
 .badge-tool{background:#23863622;color:#3fb950;border:1px solid #23863644}
+.badge-project{background:#1f6feb22;color:#58a6ff;border:1px solid #1f6feb44}
 .pagination{display:flex;justify-content:center;align-items:center;gap:0.5rem;margin-top:2rem}
 .page-btn{padding:0.45rem 0.9rem;border-radius:6px;border:1px solid #21262d;background:#161b22;color:#c9d1d9;font-size:0.85rem;cursor:pointer;transition:border-color 0.15s}
 .page-btn:hover:not(:disabled){border-color:#58a6ff}
@@ -115,6 +116,7 @@ function renderList(items) {
   el.innerHTML = items.map(function(s) {
     var date = new Date(s.date).toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'});
     var badges = '';
+    if (s.project) badges += '<span class="badge badge-project">' + esc(s.project) + '</span> ';
     if (s.aiTool) badges += '<span class="badge badge-tool">' + esc(s.aiTool) + '</span> ';
     return '<div class="session-card" onclick="showSession(\'' + s.id + '\')">' +
       '<div class="card-header">' +

@@ -17,7 +17,7 @@ services:
       POSTGRES_PASSWORD: aiscribe
       POSTGRES_DB: aiscribe
     ports:
-      - "5433:5432"
+      - "5434:5432"
     volumes:
       - aiscribe_db:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql

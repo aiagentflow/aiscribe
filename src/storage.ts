@@ -24,6 +24,7 @@ export interface SessionEntry {
   id: string;
   date: string;
   branch: string;
+  project: string;
   files: number;
   insertions: number;
   deletions: number;
@@ -91,7 +92,8 @@ ${summary}
   const entry: SessionEntry = {
     id,
     date: new Date().toISOString(),
-    branch: displayName, // Use display name, not git branch
+    branch: displayName,
+    project: path.basename(process.cwd()),
     files: stats.filesChanged,
     insertions: stats.insertions,
     deletions: stats.deletions,
