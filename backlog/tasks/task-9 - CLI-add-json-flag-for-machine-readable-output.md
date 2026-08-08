@@ -1,9 +1,10 @@
 ---
 id: TASK-9
 title: 'CLI: add --json flag for machine-readable output'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-08 12:58'
+updated_date: '2026-08-08 13:02'
 labels: []
 dependencies: []
 ordinal: 9000

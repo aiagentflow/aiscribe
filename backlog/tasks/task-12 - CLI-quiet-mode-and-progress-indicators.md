@@ -1,9 +1,10 @@
 ---
 id: TASK-12
 title: 'CLI: quiet mode and progress indicators'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-08 12:58'
+updated_date: '2026-08-08 13:03'
 labels: []
 dependencies: []
 ordinal: 12000
