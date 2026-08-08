@@ -1,6 +1,6 @@
 {
   "name": "aiscribe",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Your AI's scribe. Every session, recorded.",
   "main": "dist/index.js",
   "bin": {

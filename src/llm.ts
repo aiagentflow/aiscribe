@@ -52,12 +52,19 @@ export function detectProvider(): ProviderName {
   const explicit = process.env.AISCRIBE_PROVIDER as ProviderName | undefined;
   if (explicit && Object.keys(DEFAULTS).includes(explicit)) return explicit;
 
-  // Detect by which API key is set
-  if (process.env.AISCRIBE_API_KEY) return "openrouter";
+  // Detect by AISCRIBE_API_KEY prefix
+  const key = process.env.AISCRIBE_API_KEY;
+  if (key) {
+    if (key.startsWith("sk-ant-")) return "anthropic";
+    if (key.startsWith("sk-or-")) return "openrouter";
+    if (key.startsWith("sk-")) return "openai";
+    return "openrouter"; // default for unknown prefixes
+  }
+
+  // Fallback to legacy env vars
   if (process.env.ANTHROPIC_API_KEY) return "anthropic";
   if (process.env.OPENAI_API_KEY) return "openai";
 
-  // Fallback to Ollama if no keys
   return "ollama";
 }
 
