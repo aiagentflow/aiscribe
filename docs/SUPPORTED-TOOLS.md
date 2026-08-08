@@ -6,9 +6,9 @@ AIScribe captures conversation context from the following AI coding tools. Detec
 
 | Tool | What's Captured | Source |
 |------|----------------|--------|
-| **pi** | Full conversation: user prompts, assistant responses, tool calls, timestamps | `~/.pi/agent/sessions/` |
+| **pi (Harness)** | Full conversation: user prompts, assistant responses, tool calls, timestamps | `~/.pi/agent/sessions/` |
 
-pi is the only tool that stores complete session transcripts on disk. Every message (user, assistant, tool calls) is captured with timestamps.
+pi (the Harness coding agent) is the only tool that stores complete session transcripts on disk. Every message (user, assistant, tool calls) is captured with timestamps.
 
 ## Partial Support (user prompts only)
 
@@ -70,3 +70,30 @@ For tools that don't persist history: AIScribe can still capture the git diff. U
 | `aiscribe log -c` | Git diff + conversation context + LLM summary | Yes |
 | `aiscribe log -c -f` | Git diff + raw conversation log (no LLM) | No |
 | `aiscribe log -f` | Git diff only (no LLM) | No |
+
+## Train Your Own Local LLM
+
+Every AIScribe session captures your real coding conversations: what you asked, what the AI did, what files changed, what decisions were made. Over weeks and months, this becomes a personalized dataset of YOUR development patterns.
+
+**What you can do with this data:**
+
+1. **Fine-tune a local model** (Llama, Qwen, Mistral) on your own coding style
+2. **Build project-specific skills** for AI agents based on your past decisions
+3. **Create a "second brain"** that remembers every architectural choice you've made
+
+**How to export your data for training:**
+
+```bash
+# Export all sessions as AI-friendly text
+aiscribe export --format ai --output training-data.txt
+
+# Export as JSON for programmatic use
+aiscribe export --format json --output sessions.json
+
+# Export single project
+cd /your/project && aiscribe export --format ai
+```
+
+The `--format ai` export is optimized for LLM context windows: compact, chronological, with prompts and decisions.
+
+**Privacy:** All data stays local. Your `.aiscribe/` directory is on your machine. Nothing is sent anywhere unless you choose to.
