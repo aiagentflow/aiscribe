@@ -26,6 +26,7 @@ export interface SessionStatus {
 // Cache: avoid re-reading files that haven't changed
 const fileCache = new Map<string, { mtime: number; data: string }>();
 const sessionCache = new Map<string, AgentSession>();
+const seenSessions = new Set<string>();
 const processedSessions = new Set<string>();
 let lastFullScan = 0;
 const FULL_SCAN_INTERVAL = 30000; // Full scan every 30s

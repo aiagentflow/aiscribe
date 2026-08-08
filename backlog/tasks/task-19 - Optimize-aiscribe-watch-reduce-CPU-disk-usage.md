@@ -1,9 +1,10 @@
 ---
 id: TASK-19
 title: 'Optimize aiscribe watch: reduce CPU/disk usage'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-08 13:09'
+updated_date: '2026-08-08 13:10'
 labels: []
 dependencies: []
 ordinal: 19000

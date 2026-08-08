@@ -1,9 +1,10 @@
 ---
 id: TASK-20
 title: Standalone landing page for aiscribe.aiagentflow.dev
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-08 13:09'
+updated_date: '2026-08-08 13:10'
 labels: []
 dependencies: []
 ordinal: 20000

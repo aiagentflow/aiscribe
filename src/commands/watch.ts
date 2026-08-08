@@ -79,7 +79,7 @@ export async function watch(args?: string[]): Promise<void> {
   }
 
   // Poll for completed sessions
-  const interval = setInterval(async () => {
+  const timer = setInterval(async () => {
     const newlyCompleted = getNewlyCompletedSessions();
 
     for (const s of newlyCompleted) {
@@ -92,7 +92,7 @@ export async function watch(args?: string[]): Promise<void> {
 
   // Handle Ctrl+C
   process.on("SIGINT", () => {
-    clearInterval(interval);
+    clearInterval(timer);
     console.log(`\n${gray("  Watching stopped.")}`);
     process.exit(0);
   });

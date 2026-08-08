@@ -1,0 +1,56 @@
+# AIScribe
+
+AIScribe is a CLI tool that journals AI coding sessions into structured, searchable logs. It works with any AI coding tool (Claude Code, Cursor, Codex, etc.) by reading git diffs and AI tool history files.
+
+## Quick Start
+
+```bash
+npm install -g aiscribe
+```
+
+## Before a Coding Session
+
+```bash
+# Get project context before starting work
+aiscribe context --format plain --last 5
+```
+
+## After a Coding Session
+
+```bash
+# Capture the session
+aiscribe log -c
+
+# Or watch for automatic capture
+aiscribe watch
+```
+
+## Key Commands
+
+| Command | Description |
+|---------|-------------|
+| `aiscribe log -c` | Record current session (git diff + AI prompts) |
+| `aiscribe context --format plain` | Get recent session history for AI context window |
+| `aiscribe search "query"` | Find past sessions by meaning |
+| `aiscribe sync` | Push local sessions to server/DB |
+| `aiscribe status` | Check active AI sessions |
+
+## For AI Agents
+
+When you are an AI agent working on this project:
+
+1. **Start**: Run `aiscribe context --format plain` to understand what was recently done
+2. **Work**: Write code as normal
+3. **End**: The user runs `aiscribe log -c` to capture what you did
+
+## Configuration
+
+- Config file: `~/.aiscribe/config.json`
+- Session storage: `.aiscribe/sessions/` (markdown files)
+- Index: `.aiscribe/index.json`
+
+## More Info
+
+- GitHub: https://github.com/aiagentflow/aiscribe
+- Docs: https://github.com/aiagentflow/aiscribe/tree/main/docs
+- npm: https://www.npmjs.com/package/aiscribe

@@ -1,24 +1,81 @@
+# CLAUDE.md
 
-<!-- BACKLOG.MD GUIDELINES START -->
-<!-- backlog.md-instructions-version: 1.49.3 -->
-<CRITICAL_INSTRUCTION>
+This file provides guidance to Claude Code when working in this repository.
 
-## Backlog.md Workflow
+## About AIScribe
 
-This project uses Backlog.md for task and project management.
+AIScribe is a CLI tool that journals AI coding sessions. It reads git diffs and AI tool history to generate structured, searchable session summaries. Part of the aiagentflow suite.
 
-**For every user request in this project, run `backlog instructions overview` before answering or taking action.**
+## Before Starting Work
 
-Use the overview to decide whether to search, read, create, or update Backlog tasks.
+Run this to understand what was recently done on this project:
 
-Before task lifecycle actions, read the matching detailed guide:
-- `backlog instructions task-creation` before creating or splitting tasks
-- `backlog instructions task-execution` before planning, changing status or assignee, adding a plan or implementation notes, or implementing task work
-- `backlog instructions task-finalization` before checking acceptance criteria, writing final summaries, or moving tasks to terminal statuses
+```bash
+aiscribe context --format plain --last 5
+```
 
-Use `backlog <command> --help` before running unfamiliar commands. Help shows options, fields, and examples.
+## After Making Changes
 
-Do not edit Backlog task, draft, document, decision, or milestone markdown files directly. Use the `backlog` CLI so metadata, relationships, and history stay consistent.
+The user will run one of these to capture the session:
 
-</CRITICAL_INSTRUCTION>
-<!-- BACKLOG.MD GUIDELINES END -->
+```bash
+aiscribe log -c      # Manual capture
+aiscribe watch       # Auto-detect and capture
+```
+
+## Project Structure
+
+```
+aiscribe/
+├── src/
+│   ├── index.ts           # CLI entry point
+│   ├── commands/          # One file per command
+│   │   ├── log.ts         # aiscribe log
+│   │   ├── context.ts     # aiscribe context
+│   │   ├── search.ts      # aiscribe search
+│   │   ├── watch.ts       # aiscribe watch/status
+│   │   ├── patterns.ts    # aiscribe hotspots/history
+│   │   ├── sync.ts        # aiscribe sync
+│   │   └── doctor.ts      # aiscribe doctor
+│   ├── git.ts             # Git operations (simple-git)
+│   ├── llm.ts             # LLM providers (OpenRouter, Anthropic, OpenAI, DeepSeek, Ollama)
+│   ├── storage.ts         # .aiscribe/ file storage
+│   ├── embeddings.ts      # Vector embeddings + semantic search
+│   ├── patterns.ts        # Hotspot + risk pattern detection
+│   ├── onboarding.ts      # Interactive first-run setup
+│   ├── terminal.ts        # ANSI terminal styling (zero deps)
+│   ├── session-lifecycle.ts  # AI session state detection
+│   └── json-output.ts     # --json flag support
+├── web/
+│   ├── index.html         # Web UI (session book)
+│   └── landing.html       # Marketing landing page
+├── backlog/               # Task tracking (Backlog.md)
+├── docs/                  # CLI.md, VERSIONING.md
+└── assets/                # Logo, screenshots
+```
+
+## Build & Test Commands
+
+```bash
+npm test              # 13 tests (vitest)
+npm run build         # TypeScript compilation
+node dist/index.js    # Run built CLI
+```
+
+## Code Standards
+
+- TypeScript strict mode, no `any` without comment
+- One command per file in `src/commands/`
+- Use `src/terminal.ts` for all CLI output styling (no chalk)
+- No new dependencies without discussion
+- Error messages must suggest a concrete fix
+- Tests required for new logic
+
+## Key Design Decisions
+
+- CLI is `aiscribe` binary, not `@aiagentflow/aiscribe`
+- Local-first: sessions stored in `.aiscribe/` directory
+- Docker/PostgreSQL is optional, not required
+- LLM provider auto-detection by API key prefix
+- Interactive onboarding on first run (saved to `~/.aiscribe/config.json`)
+- Version reads from `package.json` at runtime

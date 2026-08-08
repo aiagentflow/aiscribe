@@ -61,6 +61,14 @@ async function main() {
       const { watch } = await import("./commands/watch");
       await watch();
       break;
+    case "context":
+      const { context } = await import("./commands/context");
+      await context(args.slice(1));
+      break;
+    case "sync":
+      const { sync } = await import("./commands/sync");
+      await sync(args.slice(1));
+      break;
     case "setup":
       if (args.includes("--reconfigure")) {
         const cfg = await runOnboarding();
