@@ -1,9 +1,10 @@
 ---
 id: TASK-28
 title: Add pi (coding agent) conversation capture
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-08 15:37'
+updated_date: '2026-08-08 15:39'
 labels: []
 dependencies: []
 ordinal: 28000

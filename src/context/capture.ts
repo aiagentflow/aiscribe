@@ -41,78 +41,64 @@ function getPiSessionsDir(): string {
 
 async function readPiHistory(cwd: string): Promise<CapturedPrompt[]> {
   const prompts: CapturedPrompt[] = [];
-  const sessionId = process.env.PI_SESSION_ID || "unknown";
 
-  // Try current session file first
-  const sessionFile = getPiSessionFile();
-  if (sessionFile && fs.existsSync(sessionFile)) {
-    const content = fs.readFileSync(sessionFile, "utf-8");
-    for (const line of content.trim().split("\n")) {
-      try {
-        const entry = JSON.parse(line);
-        if (entry.type !== "message") continue;
-        const msg = entry.message;
-        if (!msg) continue;
-
-        if (msg.role === "user" && msg.content) {
-          const text = extractPiText(msg.content);
-          if (text) {
-            prompts.push({
-              text,
-              timestamp: msg.timestamp || 0,
-              sessionId,
-              tool: "pi",
-            });
-          }
-        }
-      } catch {}
-    }
-    return prompts;
-  }
-
-  // Fallback: scan sessions directory for matching project
+  // Pi stores sessions in ~/.pi/agent/sessions/<project-path-encoded>/
   const sessionsDir = getPiSessionsDir();
   if (!fs.existsSync(sessionsDir)) return [];
 
+  // Find session directory that matches current project
+  // Pi encodes paths: /media/raj/Work1/aiscribe becomes --media-raj-Work1-aiscribe--
+  let matchingDir: string | null = null;
   const dirs = fs.readdirSync(sessionsDir, { withFileTypes: true })
     .filter((d) => d.isDirectory());
 
   for (const dir of dirs) {
-    // Pi encodes project paths in directory names with -- prefix
-    const dirProject = dir.name.replace(/^--/, "").replace(/-/g, "/");
-    if (cwd.includes(dirProject) || dirProject.includes(cwd)) {
-      const files = fs.readdirSync(path.join(sessionsDir, dir.name))
-        .filter((f) => f.endsWith(".jsonl"));
-
-      // Read latest session file
-      const latest = files.sort().pop();
-      if (latest) {
-        const content = fs.readFileSync(
-          path.join(sessionsDir, dir.name, latest), "utf-8"
-        );
-        for (const line of content.trim().split("\n")) {
-          try {
-            const entry = JSON.parse(line);
-            if (entry.type !== "message") continue;
-            const msg = entry.message;
-            if (!msg || msg.role !== "user" || !msg.content) continue;
-            const text = extractPiText(msg.content);
-            if (text) {
-              prompts.push({
-                text,
-                timestamp: msg.timestamp || 0,
-                sessionId: latest.replace(".jsonl", ""),
-                tool: "pi",
-              });
-            }
-          } catch {}
-        }
-        break; // Found matching project, stop scanning
-      }
+    const decoded = dir.name
+      .replace(/^--/, "")      // Remove leading --
+      .replace(/--$/, "")      // Remove trailing --
+      .replace(/-/g, "/");     // Convert dashes back to slashes
+    if (cwd === decoded || cwd.startsWith(decoded) || decoded.startsWith(cwd)) {
+      matchingDir = path.join(sessionsDir, dir.name);
+      break;
     }
   }
 
+  // If no matching project dir, try PI_SESSION_FILE as fallback
+  const sessionFile = matchingDir
+    ? getLatestSessionFile(matchingDir)
+    : (getPiSessionFile() && fs.existsSync(getPiSessionFile()!) ? getPiSessionFile()! : null);
+
+  if (!sessionFile) return [];
+
+  const sessionId = path.basename(sessionFile, ".jsonl");
+  const content = fs.readFileSync(sessionFile, "utf-8");
+
+  for (const line of content.trim().split("\n")) {
+    try {
+      const entry = JSON.parse(line);
+      if (entry.type !== "message") continue;
+      const msg = entry.message;
+      if (!msg || msg.role !== "user" || !msg.content) continue;
+      const text = extractPiText(msg.content);
+      if (text) {
+        prompts.push({
+          text,
+          timestamp: msg.timestamp || 0,
+          sessionId,
+          tool: "pi",
+        });
+      }
+    } catch {}
+  }
+
   return prompts;
+}
+
+function getLatestSessionFile(projectDir: string): string | null {
+  const files = fs.readdirSync(projectDir)
+    .filter((f) => f.endsWith(".jsonl"))
+    .sort();
+  return files.length > 0 ? path.join(projectDir, files[files.length - 1]) : null;
 }
 
 function extractPiText(content: Array<{ type: string; text?: string }>): string {
