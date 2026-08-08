@@ -1,7 +1,9 @@
 import * as fs from "fs";
 import * as path from "path";
 
-const AISCRIBE_DIR = path.join(process.cwd(), ".aiscribe");
+function aiscribeDir(): string {
+  return path.join(process.cwd(), ".aiscribe");
+}
 
 export function generateDockerCompose(): string {
   return `version: "3.8"
@@ -109,7 +111,7 @@ CMD ["aiscribe", "server", "--docker"]
 }
 
 export function setupDocker(): { files: string[] } {
-  ensureDir(AISCRIBE_DIR);
+  ensureDir(aiscribeDir());
 
   const files: { name: string; content: string }[] = [
     { name: "docker-compose.yml", content: generateDockerCompose() },
@@ -118,11 +120,11 @@ export function setupDocker(): { files: string[] } {
   ];
 
   for (const file of files) {
-    const filepath = path.join(AISCRIBE_DIR, file.name);
+    const filepath = path.join(aiscribeDir(), file.name);
     fs.writeFileSync(filepath, file.content, "utf-8");
   }
 
-  return { files: files.map((f) => path.join(AISCRIBE_DIR, f.name)) };
+  return { files: files.map((f) => path.join(aiscribeDir(), f.name)) };
 }
 
 function ensureDir(dir: string): void {

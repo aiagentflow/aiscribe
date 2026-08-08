@@ -7,8 +7,6 @@ import fastifyStatic from "@fastify/static";
 import * as path from "path";
 import * as fs from "fs";
 
-const AISCRIBE_DIR = path.join(process.cwd(), ".aiscribe");
-
 interface SessionData {
   id: string;
   date: string;
@@ -110,7 +108,7 @@ export async function startServer(port: number = 3848, isDocker: boolean = false
 }
 
 function loadExistingSessions(store: MemoryStore): void {
-  const sessionsDir = path.join(AISCRIBE_DIR, "sessions");
+  const sessionsDir = path.join(process.cwd(), ".aiscribe", "sessions");
   if (!fs.existsSync(sessionsDir)) return;
 
   const files = fs.readdirSync(sessionsDir).filter((f) => f.endsWith(".md"));

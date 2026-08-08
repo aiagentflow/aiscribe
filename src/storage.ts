@@ -2,9 +2,17 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 
-const AISCRIBE_DIR = path.join(process.cwd(), ".aiscribe");
-const SESSIONS_DIR = path.join(AISCRIBE_DIR, "sessions");
-const INDEX_FILE = path.join(AISCRIBE_DIR, "index.json");
+function aiscribeDir(): string {
+  return path.join(process.cwd(), ".aiscribe");
+}
+
+function sessionsDir(): string {
+  return path.join(aiscribeDir(), "sessions");
+}
+
+function indexFile(): string {
+  return path.join(aiscribeDir(), "index.json");
+}
 
 export interface SessionEntry {
   id: string;
@@ -47,13 +55,13 @@ export function saveSession(
   stats: { filesChanged: number; insertions: number; deletions: number },
   meta?: { tool: string | null }
 ): string {
-  ensureDir(SESSIONS_DIR);
+  ensureDir(sessionsDir());
 
   const date = todaySlug();
   const slug = slugify(branch || "session");
   const id = `${date}-${slug}`;
   const filename = `${id}.md`;
-  const filepath = path.join(SESSIONS_DIR, filename);
+  const filepath = path.join(sessionsDir(), filename);
 
   // Add metadata header to the summary
   const content = `# Session: ${branch || "unknown"}
@@ -98,12 +106,12 @@ function updateIndex(entry: SessionEntry): void {
   }
 
   index.generated = new Date().toISOString();
-  fs.writeFileSync(INDEX_FILE, JSON.stringify(index, null, 2), "utf-8");
+  fs.writeFileSync(indexFile(), JSON.stringify(index, null, 2), "utf-8");
 }
 
 export function loadIndex(): IndexFile {
-  if (!fs.existsSync(INDEX_FILE)) {
+  if (!fs.existsSync(indexFile())) {
     return { sessions: [], generated: new Date().toISOString() };
   }
-  return JSON.parse(fs.readFileSync(INDEX_FILE, "utf-8"));
+  return JSON.parse(fs.readFileSync(indexFile(), "utf-8"));
 }
