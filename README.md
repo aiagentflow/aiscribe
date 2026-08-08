@@ -91,18 +91,11 @@ Implemented Stripe refund processing with webhook support...
 AIScribe auto-detects your key type. You can also set it explicitly:
 
 ```bash
-# Any of these work:
 export AISCRIBE_API_KEY=sk-or-...    # OpenRouter (200+ models, recommended)
 export AISCRIBE_API_KEY=sk-ant-...   # Anthropic Claude
 export AISCRIBE_API_KEY=sk-...       # OpenAI, DeepSeek, or custom
-
-# Or be explicit:
 export AISCRIBE_PROVIDER=deepseek
-export AISCRIBE_PROVIDER=custom
-export AISCRIBE_BASE_URL=https://your-api.com/v1
-
-# Or free & local:
-export AISCRIBE_PROVIDER=ollama
+export AISCRIBE_PROVIDER=ollama      # Free & local
 ```
 
 | Provider | Models | Cost |
@@ -112,6 +105,17 @@ export AISCRIBE_PROVIDER=ollama
 | Anthropic | Claude Sonnet, Opus | Higher quality |
 | OpenAI | GPT-4o, GPT-4o-mini | Pay per use |
 | Ollama | Llama, Qwen, Mistral (local) | Free |
+
+## AI Tool Support
+
+| Tool | Conversation | Git Diff |
+|------|-------------|----------|
+| **pi** | Full (prompts + responses + tool calls) | Yes |
+| **Claude Code** | Prompts only* | Yes |
+| **Codex** | Prompts only* | Yes |
+| **Aider** | Prompts only* | Yes |
+
+*These tools don't persist assistant responses to disk. See [docs/SUPPORTED-TOOLS.md](docs/SUPPORTED-TOOLS.md) for details.
 
 ## Web UI
 
