@@ -42,36 +42,46 @@ function getPiSessionsDir(): string {
 async function readPiHistory(cwd: string): Promise<CapturedPrompt[]> {
   const prompts: CapturedPrompt[] = [];
 
-  // Pi stores sessions in ~/.pi/agent/sessions/<project-path-encoded>/
+  // If PI_CODING_AGENT is set, pi is definitely the tool being used
+  // Always capture from the active session regardless of project match
+  const sessionFile = getPiSessionFile();
+  const isPiActive = process.env.PI_CODING_AGENT === "true";
+
+  if (isPiActive && sessionFile && fs.existsSync(sessionFile)) {
+    const sessionId = process.env.PI_SESSION_ID || path.basename(sessionFile, ".jsonl");
+    return readPiSessionFile(sessionFile, sessionId);
+  }
+
+  // Fallback: scan sessions directory for matching project
   const sessionsDir = getPiSessionsDir();
   if (!fs.existsSync(sessionsDir)) return [];
 
-  // Find session directory that matches current project
-  // Pi encodes paths: /media/raj/Work1/aiscribe becomes --media-raj-Work1-aiscribe--
   let matchingDir: string | null = null;
   const dirs = fs.readdirSync(sessionsDir, { withFileTypes: true })
     .filter((d) => d.isDirectory());
 
   for (const dir of dirs) {
     const decoded = dir.name
-      .replace(/^--/, "")      // Remove leading --
-      .replace(/--$/, "")      // Remove trailing --
-      .replace(/-/g, "/");     // Convert dashes back to slashes
+      .replace(/^--/, "")
+      .replace(/--$/, "")
+      .replace(/-/g, "/");
     if (cwd === decoded || cwd.startsWith(decoded) || decoded.startsWith(cwd)) {
       matchingDir = path.join(sessionsDir, dir.name);
       break;
     }
   }
 
-  // If no matching project dir, try PI_SESSION_FILE as fallback
-  const sessionFile = matchingDir
-    ? getLatestSessionFile(matchingDir)
-    : (getPiSessionFile() && fs.existsSync(getPiSessionFile()!) ? getPiSessionFile()! : null);
+  const matchedFile = matchingDir ? getLatestSessionFile(matchingDir) : null;
+  if (matchedFile) {
+    return readPiSessionFile(matchedFile, path.basename(matchedFile, ".jsonl"));
+  }
 
-  if (!sessionFile) return [];
+  return [];
+}
 
-  const sessionId = path.basename(sessionFile, ".jsonl");
-  const content = fs.readFileSync(sessionFile, "utf-8");
+function readPiSessionFile(filepath: string, sessionId: string): CapturedPrompt[] {
+  const prompts: CapturedPrompt[] = [];
+  const content = fs.readFileSync(filepath, "utf-8");
 
   for (const line of content.trim().split("\n")) {
     try {

@@ -28,6 +28,10 @@ export async function log(args: string[]): Promise<void> {
   const isQuiet = args.includes("--quiet") || args.includes("-q");
   const cmdName = "log";
 
+  // --name flag: custom session name
+  let sessionName = getFlagValue(args, "--name");
+  if (!sessionName) sessionName = getFlagValue(args, "-n");
+
   try {
     // 1. Get git info
     if (!isQuiet && !isJson) {
@@ -122,7 +126,7 @@ export async function log(args: string[]): Promise<void> {
 
     // 5. Save
     const filepath = saveSession(
-      branch,
+      sessionName || branch,
       summary,
       diff.stats,
       { tool: contextTool },
@@ -190,4 +194,9 @@ export async function log(args: string[]): Promise<void> {
     }
     process.exit(1);
   }
+}
+
+function getFlagValue(args: string[], flag: string): string | undefined {
+  const idx = args.indexOf(flag);
+  return idx >= 0 && idx + 1 < args.length ? args[idx + 1] : undefined;
 }
