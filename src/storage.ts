@@ -60,23 +60,25 @@ export function saveSession(
   branch: string,
   summary: string,
   stats: { filesChanged: number; insertions: number; deletions: number },
-  meta?: { tool: string | null },
+  meta?: { tool: string | null; customName?: string },
   embedding?: EmbeddingData | null
 ): string {
   ensureDir(sessionsDir());
 
   const date = todaySlug();
-  const slug = slugify(branch || "session");
+  const nameForSlug = meta?.customName || branch || "session";
+  const slug = slugify(nameForSlug);
   const id = `${date}-${slug}`;
   const filename = `${id}.md`;
   const filepath = path.join(sessionsDir(), filename);
 
-  // Add metadata header to the summary
-  const content = `# Session: ${branch || "unknown"}
+  const displayName = meta?.customName || branch || "unknown";
+  const content = `# Session: ${displayName}
 
 **Date:** ${new Date().toISOString()}
+**Branch:** ${branch || "unknown"}
 **Files changed:** ${stats.filesChanged}
-**Lines:** +${stats.insertions} / -${stats.deletions}
+**Lines:** +${stats.insertions} / -${stats.deletions}${meta?.tool ? `\n**AI Tool:** ${meta.tool}` : ""}
 
 ---
 
@@ -89,7 +91,7 @@ ${summary}
   const entry: SessionEntry = {
     id,
     date: new Date().toISOString(),
-    branch: branch || "unknown",
+    branch: displayName, // Use display name, not git branch
     files: stats.filesChanged,
     insertions: stats.insertions,
     deletions: stats.deletions,

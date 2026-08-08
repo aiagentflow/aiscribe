@@ -126,10 +126,10 @@ export async function log(args: string[]): Promise<void> {
 
     // 5. Save
     const filepath = saveSession(
-      sessionName || branch,
+      branch,
       summary,
       diff.stats,
-      { tool: contextTool },
+      { tool: contextTool, customName: sessionName },
       hasEmbedding ? { vector: [], model: "", generated: "" } : null
     );
 

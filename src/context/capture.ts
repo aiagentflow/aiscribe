@@ -282,6 +282,11 @@ export async function captureContext(cwd: string): Promise<ContextResult> {
     }
   }
 
+  // If PI_CODING_AGENT is set, pi takes priority
+  if (process.env.PI_CODING_AGENT === "true") {
+    detectedTool = "pi";
+  }
+
   // Get unique session IDs
   const sessionIds = new Set(unique.map((p) => p.sessionId));
 
