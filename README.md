@@ -28,7 +28,7 @@ Part of the [aiagentflow](https://aiagentflow.dev) suite.
 ## Quick Start
 
 ```bash
-npm install -g aiscribe@1.0.0
+npm install -g aiscribe
 
 # First run: pick your LLM provider and paste API key
 cd /your/project
