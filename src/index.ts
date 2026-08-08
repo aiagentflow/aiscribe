@@ -24,6 +24,14 @@ async function main() {
       const { search } = await import("./commands/search");
       await search(args.slice(1));
       break;
+    case "hotspots":
+      const { hotspots } = await import("./commands/patterns");
+      await hotspots(args.slice(1));
+      break;
+    case "history":
+      const { history } = await import("./commands/patterns");
+      await history(args.slice(1));
+      break;
     case "setup":
       if (args.includes("--reconfigure")) {
         const config = await runOnboarding();
@@ -101,6 +109,8 @@ Usage:
   aiscribe log              Journal the current git diff as a session
   aiscribe log -c           Also capture AI tool prompt history
   aiscribe search <query>   Search sessions by meaning or keyword
+  aiscribe hotspots         Show files that change most often
+  aiscribe history <file>   Show session timeline for a file
   aiscribe setup            Generate Docker + database + web UI files
   aiscribe setup --reconfigure  Change LLM provider or API key
   aiscribe server           Start the web UI server (localhost:3848)
@@ -110,6 +120,8 @@ Examples:
   aiscribe log              Summarize and store current changes
   aiscribe log -c           Include Claude Code/Cursor/Codex context
   aiscribe search payment   Find sessions related to payment code
+  aiscribe history payment.ts  See every session that touched this file
+  aiscribe hotspots         What files change most frequently?
   aiscribe server           Start the session book web UI
 
 Configuration:
