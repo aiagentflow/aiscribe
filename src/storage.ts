@@ -13,7 +13,8 @@ export interface SessionEntry {
   files: number;
   insertions: number;
   deletions: number;
-  file: string; // relative path to session markdown
+  file: string;
+  tool?: string | null;
 }
 
 export interface IndexFile {
@@ -43,7 +44,8 @@ function todaySlug(): string {
 export function saveSession(
   branch: string,
   summary: string,
-  stats: { files: string[]; insertions: number; deletions: number; filesChanged: number }
+  stats: { filesChanged: number; insertions: number; deletions: number },
+  meta?: { tool: string | null }
 ): string {
   ensureDir(SESSIONS_DIR);
 
@@ -76,6 +78,7 @@ ${summary}
     insertions: stats.insertions,
     deletions: stats.deletions,
     file: filename,
+    tool: meta?.tool || null,
   };
 
   updateIndex(entry);

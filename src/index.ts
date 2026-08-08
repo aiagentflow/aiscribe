@@ -8,14 +8,17 @@ async function main() {
 
   if (!command || command === "help" || command === "--help" || command === "-h") {
     console.log(`
-aiscribe — Your AI's scribe. Every session, recorded.
+aiscribe - Your AI's scribe. Every session, recorded.
 
 Usage:
-  aiscribe log          Journal the current git diff as a session
-  aiscribe help         Show this help
+  aiscribe log              Journal the current git diff as a session
+  aiscribe log --with-context  Also capture AI tool prompt history
+  aiscribe setup            Initialize Docker + database + web UI
+  aiscribe help             Show this help
 
 Examples:
-  aiscribe log          # Summarize and store current changes
+  aiscribe log              # Summarize and store current changes
+  aiscribe log -c            # Include Claude Code/Cursor/Codex context
 `);
     process.exit(0);
   }
@@ -23,6 +26,10 @@ Examples:
   switch (command) {
     case "log":
       await log(args.slice(1));
+      break;
+    case "setup":
+      console.log("Coming soon: Docker + database + web UI setup.");
+      console.log("For now, aiscribe works with local .aiscribe/ directory.");
       break;
     default:
       console.error(`Unknown command: ${command}`);
