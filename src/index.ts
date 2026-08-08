@@ -3,8 +3,9 @@
 import { log } from "./commands/log";
 import { startServer } from "./server";
 import { setupDocker } from "./setup/docker";
-import { loadConfig, applyConfig, hasEnvConfig, runOnboarding, saveConfig } from "./onboarding";
+import { loadConfig, applyConfig, hasEnvConfig, runOnboarding } from "./onboarding";
 import { VERSION } from "./version";
+import { bold, dim, green, red } from "./terminal";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -140,8 +141,11 @@ function showGlobalHelp() {
     search      Search sessions by meaning or keyword
     hotspots    Show files that change most often
     history     Show session timeline for a file
+    context     Export session history for AI agents
     status      Show active AI coding sessions
     watch       Watch for AI sessions and auto-capture
+    export      Export sessions in JSON/CSV/AI format
+    sync        Push local sessions to server/DB
     server      Start the web UI server (localhost:3848)
     setup       Generate Docker files or reconfigure provider
     doctor      Check your setup for issues
@@ -218,14 +222,6 @@ function showSearchHelp() {
     related sessions even without matching keywords.
 `);
 }
-
-// ── Hacks ──
-
-// Quick bold/dim helpers for help text (no terminal module needed)
-function bold(s: string): string { return `\x1b[1m${s}\x1b[0m`; }
-function dim(s: string): string { return `\x1b[2m${s}\x1b[0m`; }
-function green(s: string): string { return `\x1b[32m${s}\x1b[0m`; }
-function red(s: string): string { return `\x1b[31m${s}\x1b[0m`; }
 
 main().catch((err) => {
   console.error(red("aiscribe failed: ") + err.message);

@@ -75,7 +75,19 @@ export async function exportSessions(args: string[]): Promise<void> {
   }
 }
 
-function readFullSession(id: string, file: string): any {
+interface SessionExport {
+  id: string;
+  date: string;
+  branch: string;
+  files: number;
+  insertions: number;
+  deletions: number;
+  tool: string | null;
+  summary: string;
+  error?: string;
+}
+
+function readFullSession(id: string, file: string): SessionExport {
   const filepath = path.join(process.cwd(), ".aiscribe", "sessions", file);
   try {
     const content = fs.readFileSync(filepath, "utf-8");
@@ -95,7 +107,7 @@ function readFullSession(id: string, file: string): any {
     return { id, date: date || new Date().toISOString(), branch, files,
       insertions: ins, deletions: del, tool, summary };
   } catch {
-    return { id, branch: "unknown", error: "Could not read session file" };
+    return { id, branch: "unknown", date: "", files: 0, insertions: 0, deletions: 0, tool: null, summary: "", error: "Could not read session file" };
   }
 }
 

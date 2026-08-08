@@ -1,3 +1,7 @@
 *.test.*
 vitest.config.ts
 src/
+backlog/
+.aiscribe/
+CLAUDE.md
+REVIEW.md
