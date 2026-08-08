@@ -1,10 +1,10 @@
 ---
 id: TASK-23
 title: 'aiscribe export: machine-readable session export'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-08 13:16'
-updated_date: '2026-08-08 13:28'
+updated_date: '2026-08-08 13:29'
 labels: []
 dependencies: []
 ordinal: 23000

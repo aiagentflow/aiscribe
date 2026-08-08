@@ -70,6 +70,13 @@ function getApiKey(provider: ProviderName): string | undefined {
 }
 
 function buildProviderFallbackChain(detected: ProviderName): ProviderName[] {
+  // If user explicitly set a provider, trust it. No fallback.
+  const explicit = process.env.AISCRIBE_PROVIDER;
+  if (explicit && explicit === detected) {
+    return [detected];
+  }
+
+  // Only fallback when auto-detected (ambiguous sk- prefix)
   const chain = [detected];
   if (detected === "openai") chain.push("deepseek", "custom");
   else if (detected === "deepseek") chain.push("openai", "custom");
@@ -129,9 +136,9 @@ export async function generateSummary(
     }
   }
 
-  const hint = tried.length > 1
-    ? `\nTried: ${tried.join(", ")}.\nTip: Set AISCRIBE_PROVIDER explicitly (openrouter | anthropic | openai | deepseek | custom | ollama).`
-    : `\nTip: Set AISCRIBE_PROVIDER=deepseek if using a DeepSeek key.`;
+  const hint = `
+Provider: ${tried.join(" → ")}
+Tip: Verify your API key for ${provider}. Set AISCRIBE_PROVIDER=${provider} or run aiscribe setup --reconfigure.`;
   throw new Error((lastError?.message || "All providers failed") + hint);
 }
 
