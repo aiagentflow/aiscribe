@@ -53,6 +53,14 @@ async function main() {
       const { doctor } = await import("./commands/doctor");
       await doctor();
       break;
+    case "status":
+      const { status } = await import("./commands/watch");
+      await status();
+      break;
+    case "watch":
+      const { watch } = await import("./commands/watch");
+      await watch();
+      break;
     case "setup":
       if (args.includes("--reconfigure")) {
         const cfg = await runOnboarding();
@@ -120,6 +128,8 @@ function showGlobalHelp() {
     search      Search sessions by meaning or keyword
     hotspots    Show files that change most often
     history     Show session timeline for a file
+    status      Show active AI coding sessions
+    watch       Watch for AI sessions and auto-capture
     server      Start the web UI server (localhost:3848)
     setup       Generate Docker files or reconfigure provider
     doctor      Check your setup for issues
@@ -131,6 +141,8 @@ function showGlobalHelp() {
     aiscribe search payment         Find sessions related to payment
     aiscribe history payment.ts     See every session touching this file
     aiscribe hotspots               What files change most often?
+    aiscribe status                 See active Claude Code sessions
+    aiscribe watch                  Auto-detect when sessions complete
     aiscribe server                 Browse sessions in web UI
     aiscribe doctor                 Validate your setup
     aiscribe setup --reconfigure    Change LLM provider or API key
