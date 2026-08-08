@@ -153,12 +153,12 @@ export async function log(args: string[]): Promise<void> {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             id: path.basename(filepath).replace(".md", ""),
-            branch,
+            branch: sessionName || branch,
             date: new Date().toISOString(),
             filesChanged: diff.stats.filesChanged,
             insertions: diff.stats.insertions,
             deletions: diff.stats.deletions,
-            summary: summary,
+            summary: fullSummary,
             aiTool: contextTool,
           }),
         });
