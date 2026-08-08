@@ -1,10 +1,10 @@
 ---
 id: TASK-18
 title: 'Session lifecycle: detect start, active, end states'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-08 13:06'
-updated_date: '2026-08-08 13:07'
+updated_date: '2026-08-08 13:08'
 labels: []
 dependencies: []
 ordinal: 18000

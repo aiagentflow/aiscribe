@@ -1,9 +1,10 @@
 ---
 id: TASK-16
 title: 'Real-time session watcher: aiscribe watch'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-08 13:06'
+updated_date: '2026-08-08 13:08'
 labels: []
 dependencies: []
 ordinal: 16000

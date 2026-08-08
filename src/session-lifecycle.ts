@@ -1,5 +1,6 @@
 // Session lifecycle detector
 // Reads AI agent session state from disk to detect active sessions
+// Optimized: uses mtime comparison and caching to minimize disk I/O
 
 import * as fs from "fs";
 import * as path from "path";
@@ -22,9 +23,28 @@ export interface SessionStatus {
   lastCheck: string;
 }
 
-// Cache to track which sessions we've already seen/processed
-const seenSessions = new Set<string>();
+// Cache: avoid re-reading files that haven't changed
+const fileCache = new Map<string, { mtime: number; data: string }>();
+const sessionCache = new Map<string, AgentSession>();
 const processedSessions = new Set<string>();
+let lastFullScan = 0;
+const FULL_SCAN_INTERVAL = 30000; // Full scan every 30s
+
+function readFileIfChanged(filepath: string): string | null {
+  try {
+    const stat = fs.statSync(filepath);
+    const cached = fileCache.get(filepath);
+    if (cached && cached.mtime === stat.mtimeMs) {
+      return null; // Not changed
+    }
+    const data = fs.readFileSync(filepath, "utf-8");
+    fileCache.set(filepath, { mtime: stat.mtimeMs, data });
+    return data;
+  } catch {
+    fileCache.delete(filepath);
+    return null;
+  }
+}
 
 // Read Claude Code sessions from ~/.claude/sessions/
 function readClaudeSessions(): AgentSession[] {

@@ -51,22 +51,30 @@ export async function status(): Promise<void> {
   }
 }
 
-export async function watch(): Promise<void> {
+export async function watch(args?: string[]): Promise<void> {
+  const interval = args?.includes("--interval")
+    ? parseInt(args[args.indexOf("--interval") + 1]) * 1000
+    : 15000; // Default 15s, not 5s
+
   console.log("");
   console.log(bold("  AIScribe Watch"));
-  console.log(dim("  Watching for AI coding sessions..."));
-  console.log("");
-  console.log(gray("  Waiting for sessions to complete. Press Ctrl+C to stop."));
+  console.log(dim(`  Polling every ${interval / 1000}s. Press Ctrl+C to stop.`));
   console.log("");
 
   // Show current active sessions
   const initial = getSessionStatus();
   if (initial.activeSessions.length > 0) {
+    console.log(green(`  ${initial.activeSessions.length} active session(s):`));
     for (const s of initial.activeSessions) {
+      const dur = Math.round((Date.now() - s.startedAt) / 60000);
       console.log(
-        `  ${yellow("●")} Active: ${bold(s.name)} ${dim(`(${s.status})`)}`
+        `    ${yellow("●")} ${bold(s.name)} ${dim(`(${s.status}, ${dur}m)`)}`
       );
     }
+    console.log("");
+  } else {
+    console.log(gray("  No active sessions. Waiting..."));
+    console.log(gray("  Start a Claude Code session to see activity."));
     console.log("");
   }
 
@@ -80,7 +88,7 @@ export async function watch(): Promise<void> {
       console.log(`  ${dim(`Duration: ${dur} min | Prompts: ${s.prompts.length}`)}`);
       console.log(`  ${dim("Run 'aiscribe log -c' to capture this session.")}`);
     }
-  }, 5000); // Poll every 5 seconds
+  }, interval);
 
   // Handle Ctrl+C
   process.on("SIGINT", () => {
