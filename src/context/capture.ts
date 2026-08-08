@@ -29,6 +29,98 @@ function getClaudeHistoryPath(): string {
   return path.join(os.homedir(), ".claude", "history.jsonl");
 }
 
+// ── Pi (this agent) ──
+
+function getPiSessionFile(): string | null {
+  return process.env.PI_SESSION_FILE || null;
+}
+
+function getPiSessionsDir(): string {
+  return path.join(os.homedir(), ".pi", "agent", "sessions");
+}
+
+async function readPiHistory(cwd: string): Promise<CapturedPrompt[]> {
+  const prompts: CapturedPrompt[] = [];
+  const sessionId = process.env.PI_SESSION_ID || "unknown";
+
+  // Try current session file first
+  const sessionFile = getPiSessionFile();
+  if (sessionFile && fs.existsSync(sessionFile)) {
+    const content = fs.readFileSync(sessionFile, "utf-8");
+    for (const line of content.trim().split("\n")) {
+      try {
+        const entry = JSON.parse(line);
+        if (entry.type !== "message") continue;
+        const msg = entry.message;
+        if (!msg) continue;
+
+        if (msg.role === "user" && msg.content) {
+          const text = extractPiText(msg.content);
+          if (text) {
+            prompts.push({
+              text,
+              timestamp: msg.timestamp || 0,
+              sessionId,
+              tool: "pi",
+            });
+          }
+        }
+      } catch {}
+    }
+    return prompts;
+  }
+
+  // Fallback: scan sessions directory for matching project
+  const sessionsDir = getPiSessionsDir();
+  if (!fs.existsSync(sessionsDir)) return [];
+
+  const dirs = fs.readdirSync(sessionsDir, { withFileTypes: true })
+    .filter((d) => d.isDirectory());
+
+  for (const dir of dirs) {
+    // Pi encodes project paths in directory names with -- prefix
+    const dirProject = dir.name.replace(/^--/, "").replace(/-/g, "/");
+    if (cwd.includes(dirProject) || dirProject.includes(cwd)) {
+      const files = fs.readdirSync(path.join(sessionsDir, dir.name))
+        .filter((f) => f.endsWith(".jsonl"));
+
+      // Read latest session file
+      const latest = files.sort().pop();
+      if (latest) {
+        const content = fs.readFileSync(
+          path.join(sessionsDir, dir.name, latest), "utf-8"
+        );
+        for (const line of content.trim().split("\n")) {
+          try {
+            const entry = JSON.parse(line);
+            if (entry.type !== "message") continue;
+            const msg = entry.message;
+            if (!msg || msg.role !== "user" || !msg.content) continue;
+            const text = extractPiText(msg.content);
+            if (text) {
+              prompts.push({
+                text,
+                timestamp: msg.timestamp || 0,
+                sessionId: latest.replace(".jsonl", ""),
+                tool: "pi",
+              });
+            }
+          } catch {}
+        }
+        break; // Found matching project, stop scanning
+      }
+    }
+  }
+
+  return prompts;
+}
+
+function extractPiText(content: Array<{ type: string; text?: string }>): string {
+  if (!Array.isArray(content)) return "";
+  const textBlock = content.find((c) => c.type === "text" && c.text);
+  return textBlock?.text?.trim() || "";
+}
+
 function getClaudeSessionsDir(): string {
   return path.join(os.homedir(), ".claude", "sessions");
 }
@@ -151,6 +243,7 @@ export interface ContextResult {
   prompts: CapturedPrompt[];
   sessionCount: number;
   recentPrompt: string | null;
+  fullContext: string; // Full conversation context for LLM prompt
 }
 
 export async function captureContext(cwd: string): Promise<ContextResult> {
@@ -160,8 +253,9 @@ export async function captureContext(cwd: string): Promise<ContextResult> {
   const claudePrompts = await readClaudeHistory(cwd);
   const codexPrompts = await readCodexHistory(cwd);
   const aiderPrompts = await readAiderHistory(cwd);
+  const piPrompts = await readPiHistory(cwd);
 
-  allPrompts.push(...claudePrompts, ...codexPrompts, ...aiderPrompts);
+  allPrompts.push(...claudePrompts, ...codexPrompts, ...aiderPrompts, ...piPrompts);
 
   // Sort by timestamp (most recent first)
   allPrompts.sort((a, b) => b.timestamp - a.timestamp);
@@ -197,9 +291,10 @@ export async function captureContext(cwd: string): Promise<ContextResult> {
 
   return {
     tool: detectedTool,
-    prompts: unique.slice(0, 20), // Limit to last 20 prompts
+    prompts: unique.slice(0, 20),
     sessionCount: sessionIds.size,
     recentPrompt: unique.length > 0 ? unique[0].text : null,
+    fullContext: unique.map((p) => `[${new Date(p.timestamp).toISOString().split("T")[0]}] ${p.text}`).join("\n"),
   };
 }
 
@@ -210,12 +305,7 @@ export function formatContextForPrompt(context: ContextResult): string {
   let output = "\n## Conversation Context\n";
   output += `AI tool: ${context.tool || "unknown"}\n`;
   output += `Sessions detected: ${context.sessionCount}\n`;
-  output += `Recent prompts:\n`;
-
-  for (const p of context.prompts.slice(0, 10)) {
-    const date = new Date(p.timestamp).toISOString().split("T")[0];
-    output += `- [${date}] ${p.text.slice(0, 200)}\n`;
-  }
-
+  output += `Recent prompts and actions:\n`;
+  output += context.fullContext;
   return output;
 }

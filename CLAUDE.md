@@ -23,43 +23,60 @@ aiscribe log -c      # Manual capture
 aiscribe watch       # Auto-detect and capture
 ```
 
-## Project Structure
+## Architecture
+
+`src/index.ts` is a hand-rolled arg parser (no commander/yargs) that switches on
+`args[0]` and lazily `import()`s each command module, then calls it with the
+remaining argv slice. Global help text and per-command `--help` text are also
+hardcoded here — when adding or renaming a command, update the `switch` block
+*and* `showGlobalHelp()` (and add a `show<Cmd>Help()` if the command warrants
+its own `--help`).
+
+Commands: `log`, `search`, `hotspots`, `history`, `doctor`, `status`, `watch`,
+`context`, `sync`, `export`, `setup` (`--reconfigure` to change provider/key),
+`server`.
+
+Config resolution order, used by `ensureConfig()`/`ensureConfigOrWarn()` in
+`index.ts`: env vars (`hasEnvConfig()`) → saved `~/.aiscribe/config.json`
+(`loadConfig()`) → interactive `runOnboarding()`. `log` requires config and
+will onboard if missing; `search`/`server` warn and degrade instead of
+blocking (keyword search / no embeddings).
 
 ```
 aiscribe/
 ├── src/
-│   ├── index.ts           # CLI entry point
-│   ├── commands/          # One file per command
-│   │   ├── log.ts         # aiscribe log
-│   │   ├── context.ts     # aiscribe context
-│   │   ├── search.ts      # aiscribe search
-│   │   ├── watch.ts       # aiscribe watch/status
-│   │   ├── patterns.ts    # aiscribe hotspots/history
-│   │   ├── sync.ts        # aiscribe sync
-│   │   └── doctor.ts      # aiscribe doctor
-│   ├── git.ts             # Git operations (simple-git)
-│   ├── llm.ts             # LLM providers (OpenRouter, Anthropic, OpenAI, DeepSeek, Ollama)
-│   ├── storage.ts         # .aiscribe/ file storage
-│   ├── embeddings.ts      # Vector embeddings + semantic search
-│   ├── patterns.ts        # Hotspot + risk pattern detection
-│   ├── onboarding.ts      # Interactive first-run setup
-│   ├── terminal.ts        # ANSI terminal styling (zero deps)
-│   ├── session-lifecycle.ts  # AI session state detection
-│   └── json-output.ts     # --json flag support
+│   ├── index.ts            # CLI entry point: arg parsing, dispatch, help text
+│   ├── commands/           # One file per command (log, search, hotspots,
+│   │                       # history, context, sync, export, doctor, watch)
+│   ├── context/capture.ts  # AI tool prompt-history capture (Claude Code, Codex, Aider)
+│   ├── server/index.ts     # Web UI server (aiscribe server, localhost:3848)
+│   ├── setup/docker.ts     # `aiscribe setup` Docker + Postgres scaffold
+│   ├── git.ts              # Git operations (simple-git)
+│   ├── llm.ts              # LLM providers (OpenRouter, Anthropic, OpenAI, DeepSeek, Ollama)
+│   ├── storage.ts          # .aiscribe/ file storage
+│   ├── embeddings.ts       # Vector embeddings + semantic search
+│   ├── patterns.ts         # Hotspot + risk pattern detection
+│   ├── onboarding.ts       # Interactive first-run setup, config load/save
+│   ├── terminal.ts         # ANSI terminal styling (zero deps)
+│   ├── session-lifecycle.ts # AI session state detection (used by watch/status)
+│   ├── json-output.ts      # --json flag support
+│   └── version.ts          # VERSION read from package.json at build time
 ├── web/
-│   ├── index.html         # Web UI (session book)
-│   └── landing.html       # Marketing landing page
-├── backlog/               # Task tracking (Backlog.md)
-├── docs/                  # CLI.md, VERSIONING.md
-└── assets/                # Logo, screenshots
+│   ├── index.html          # Web UI (session book)
+│   └── landing.html        # Marketing landing page
+├── backlog/                # Task tracking (Backlog.md)
+├── docs/                   # CLI.md, VERSIONING.md
+└── assets/                 # Logo, screenshots
 ```
 
 ## Build & Test Commands
 
 ```bash
-npm test              # 13 tests (vitest)
-npm run build         # TypeScript compilation
-node dist/index.js    # Run built CLI
+npm test                    # Run full vitest suite
+npx vitest run src/llm.test.ts   # Run a single test file
+npm run build                # TypeScript compilation (tsc) to dist/
+npm run dev                  # Run CLI from source via ts-node
+node dist/index.js <command> # Run built CLI directly
 ```
 
 ## Code Standards
