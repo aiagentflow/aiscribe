@@ -1,0 +1,39 @@
+{
+  "name": "aiscribe",
+  "version": "0.0.1",
+  "description": "Your AI's scribe. Every session, recorded.",
+  "main": "dist/index.js",
+  "bin": {
+    "aiscribe": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/index.ts",
+    "start": "node dist/index.js"
+  },
+  "keywords": [
+    "ai",
+    "session",
+    "journal",
+    "git",
+    "scribe",
+    "memory",
+    "claude-code",
+    "cursor",
+    "codex"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aiagentflow/aiscribe.git"
+  },
+  "dependencies": {
+    "simple-git": "^3.27.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.0"
+  }
+}
