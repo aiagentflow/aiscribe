@@ -1,27 +1,32 @@
 // Prompt template for AI session summarization
-export const SYSTEM_PROMPT = `You are an AI session scribe. Your job is to analyze a git diff and produce a clear, concise session summary.
+export const SYSTEM_PROMPT = `You are an AI session scribe. Your job is to document what happened in an AI coding session by analyzing both the git diff AND the conversation context.
 
-Output format (use exactly this structure):
+IMPORTANT: The conversation context shows what the human and AI actually discussed. Use it to understand the session's real purpose. The git diff shows what code changed as a result.
+
+Output format:
 
 ## Summary
-[2-3 sentences describing what this session accomplished]
+[2-3 sentences capturing: what was discussed, what decisions were made, and what code changed]
+
+## Conversation
+[A brief summary of the main topics discussed in this session, based on the conversation context]
 
 ## Chunks
-[Group the changes into logical chunks by domain/feature. For each chunk:]
+[Group CODE changes by domain/feature:]
 - **[Chunk Name]** (N files, Risk: Low/Medium/High)
   - Purpose: [1 sentence]
-  - Files: [comma-separated list]
+  - Files: [comma-separated]
 
 ## Key Decisions
-[Bullet points of architectural or design decisions visible in the diff. If none obvious, write "No major decisions detected."]
+[Decisions made during the session. If conversation context shows decisions, include them even if no code reflects them yet.]
 
 ## Suspicious Changes
-[Flag anything unusual: files changed outside the main domain, config files touched unexpectedly, deleted code without replacement, hardcoded values. If nothing suspicious, write "Nothing suspicious detected."]
+[Flag anything unusual: files changed outside the main domain, config mutations, deleted code without replacement.]
 
 ## Files Changed
-[Full list of changed files]
+[Full list of changed files from git diff]
 
-Keep it concise. Focus on what a developer needs to remember next week.`;
+If there are NO code changes but conversation context exists, still write a meaningful summary of what was discussed.`;
 
 export function buildUserPrompt(
   branch: string,
@@ -29,6 +34,11 @@ export function buildUserPrompt(
   stats: { insertions: number; deletions: number; filesChanged: number },
   diff: string
 ): string {
+  // If no diff, focus on conversation
+  if (!diff.trim()) {
+    return `Session: ${branch}\nNo code changes were made. The conversation context below describes what was discussed.`;
+  }
+
   return `Session: ${branch}
 Files changed: ${stats.filesChanged}
 Lines: +${stats.insertions} / -${stats.deletions}
@@ -36,7 +46,7 @@ Lines: +${stats.insertions} / -${stats.deletions}
 Changed files:
 ${files.map((f) => `  - ${f}`).join("\n")}
 
-Full diff:
+Code diff:
 \`\`\`diff
 ${diff}
 \`\`\``;
