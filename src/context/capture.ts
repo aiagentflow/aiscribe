@@ -41,33 +41,42 @@ function getPiSessionsDir(): string {
 
 async function readPiHistory(cwd: string): Promise<CapturedPrompt[]> {
   const prompts: CapturedPrompt[] = [];
-
-  // If PI_CODING_AGENT is set, pi is definitely the tool being used
-  // Always capture from the active session regardless of project match
   const sessionFile = getPiSessionFile();
-  const isPiActive = process.env.PI_CODING_AGENT === "true";
 
-  if (isPiActive && sessionFile && fs.existsSync(sessionFile)) {
+  // If PI_SESSION_FILE is set (pi's terminal), use it directly
+  if (sessionFile && fs.existsSync(sessionFile)) {
     const sessionId = process.env.PI_SESSION_ID || path.basename(sessionFile, ".jsonl");
     return readPiSessionFile(sessionFile, sessionId);
   }
 
-  // Fallback: scan sessions directory for matching project
+  // Otherwise, scan sessions directory for matching project
   const sessionsDir = getPiSessionsDir();
   if (!fs.existsSync(sessionsDir)) return [];
+
+  // Try to match by project name (last directory component)
+  const projectName = path.basename(cwd);
 
   let matchingDir: string | null = null;
   const dirs = fs.readdirSync(sessionsDir, { withFileTypes: true })
     .filter((d) => d.isDirectory());
 
+  // First: exact cwd match
   for (const dir of dirs) {
     const decoded = dir.name
       .replace(/^--/, "")
       .replace(/--$/, "")
       .replace(/-/g, "/");
-    if (cwd === decoded || cwd.startsWith(decoded) || decoded.startsWith(cwd)) {
-      matchingDir = path.join(sessionsDir, dir.name);
-      break;
+    if (cwd === decoded) { matchingDir = path.join(sessionsDir, dir.name); break; }
+  }
+
+  // Second: project name match (for different terminals)
+  if (!matchingDir) {
+    for (const dir of dirs) {
+      const decoded = dir.name.toLowerCase();
+      if (decoded.includes(projectName.toLowerCase().replace(/\//g, "-"))) {
+        matchingDir = path.join(sessionsDir, dir.name);
+        break;
+      }
     }
   }
 
@@ -282,9 +291,9 @@ export async function captureContext(cwd: string): Promise<ContextResult> {
     }
   }
 
-  // If PI_CODING_AGENT is set, pi takes priority
-  if (process.env.PI_CODING_AGENT === "true") {
-    detectedTool = "pi";
+  // If PI_CODING_AGENT is set OR pi has the most prompts, prioritize pi
+  if (process.env.PI_CODING_AGENT === "true" || (toolCounts["pi"] || 0) >= (toolCounts[detectedTool || ""] || 0)) {
+    if (toolCounts["pi"] && toolCounts["pi"] > 0) detectedTool = "pi";
   }
 
   // Get unique session IDs

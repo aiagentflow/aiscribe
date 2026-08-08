@@ -1,9 +1,10 @@
 ---
 id: TASK-29
 title: 'Multi-project awareness: show project name in sessions and web UI'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-08 16:10'
+updated_date: '2026-08-08 16:11'
 labels: []
 dependencies: []
 ordinal: 29000
