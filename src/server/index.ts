@@ -226,11 +226,23 @@ export async function startServer(port = 3848, isDocker = false) {
   });
 
   const host = isDocker ? "0.0.0.0" : "localhost";
-  await fastify.listen({ port, host });
-  console.log(`\n  AIScribe server: http://${host}:${port}`);
-  console.log(`  Sessions loaded: ${store.count()}\n`);
 
-  return fastify;
+  // Auto-assign next available port if default is in use
+  let currentPort = port;
+  for (let attempt = 0; attempt < 10; attempt++) {
+    try {
+      await fastify.listen({ port: currentPort, host });
+      console.log(`\n  AIScribe server: http://${host}:${currentPort}`);
+      console.log(`  Sessions loaded: ${store.count()}`);
+      if (currentPort !== port) console.log(`  (Port ${port} was busy, using ${currentPort})`);
+      console.log(`  Press Ctrl+C to stop\n`);
+      return fastify;
+    } catch (err: any) {
+      if (err.code === "EADDRINUSE") { currentPort++; continue; }
+      throw err;
+    }
+  }
+  throw new Error("No available port found.");
 }
 
 // ── Disk loader ──
