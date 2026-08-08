@@ -26,6 +26,7 @@ export async function log(args: string[]): Promise<void> {
   const withContext = args.includes("--with-context") || args.includes("-c");
   const isJson = args.includes("--json");
   const isQuiet = args.includes("--quiet") || args.includes("-q");
+  const isFull = args.includes("--full") || args.includes("-f");
   const cmdName = "log";
 
   // --name flag: custom session name
@@ -112,9 +113,18 @@ export async function log(args: string[]): Promise<void> {
       return;
     }
 
-    const summary = await generateSummary(SYSTEM_PROMPT, fullUserPrompt);
+    const summary = isFull
+      ? buildFullSummary(branch, diff, contextSection)
+      : await generateSummary(SYSTEM_PROMPT, fullUserPrompt);
 
-    if (spinner) spinner.stop("Summary generated");
+    // Append raw conversation log to the summary
+    let fullSummary = summary;
+    if (contextSection) {
+      fullSummary += "\n\n## Conversation Log\n\n";
+      fullSummary += contextSection;
+    }
+
+    if (spinner) spinner.stop(isFull ? "Session captured" : "Summary generated");
 
     // 4. Generate embedding
     let hasEmbedding = false;
@@ -199,4 +209,32 @@ export async function log(args: string[]): Promise<void> {
 function getFlagValue(args: string[], flag: string): string | undefined {
   const idx = args.indexOf(flag);
   return idx >= 0 && idx + 1 < args.length ? args[idx + 1] : undefined;
+}
+
+function buildFullSummary(
+  branch: string,
+  diff: { files: string[]; diff: string; stats: { insertions: number; deletions: number; filesChanged: number } },
+  contextSection: string
+): string {
+  let out = "## Summary\n";
+  out += `Session captured on branch "${branch}". `;
+  if (diff.stats.filesChanged > 0) {
+    out += `${diff.stats.filesChanged} file(s) changed (+${diff.stats.insertions}/-${diff.stats.deletions}). `;
+  } else {
+    out += "No code changes. ";
+  }
+  out += "See conversation log below for full details.\n";
+
+  if (diff.files.length > 0) {
+    out += "\n## Files Changed\n";
+    for (const f of diff.files) out += `- ${f}\n`;
+  }
+
+  if (diff.diff.trim()) {
+    out += "\n## Git Diff\n```diff\n";
+    out += diff.diff.slice(0, 5000);
+    out += "\n```\n";
+  }
+
+  return out;
 }

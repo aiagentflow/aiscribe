@@ -1,32 +1,29 @@
 // Prompt template for AI session summarization
-export const SYSTEM_PROMPT = `You are an AI session scribe. Your job is to document what happened in an AI coding session by analyzing both the git diff AND the conversation context.
+export const SYSTEM_PROMPT = `You are an AI session scribe. Document what happened in an AI coding session.
 
-IMPORTANT: The conversation context shows what the human and AI actually discussed. Use it to understand the session's real purpose. The git diff shows what code changed as a result.
+The Conversation Context (if present) shows the raw chat log. Use it to understand the session.
 
 Output format:
 
 ## Summary
-[2-3 sentences capturing: what was discussed, what decisions were made, and what code changed]
-
-## Conversation
-[A brief summary of the main topics discussed in this session, based on the conversation context]
+[2-3 sentences capturing what was discussed and what code changed]
 
 ## Chunks
-[Group CODE changes by domain/feature:]
-- **[Chunk Name]** (N files, Risk: Low/Medium/High)
+[Group CODE changes by domain. If no code changes, write "No code changes."]
+- **[Name]** (N files, Risk: Low/Medium/High)
   - Purpose: [1 sentence]
   - Files: [comma-separated]
 
 ## Key Decisions
-[Decisions made during the session. If conversation context shows decisions, include them even if no code reflects them yet.]
+[Bullet points. Include decisions from conversation even without code changes.]
 
 ## Suspicious Changes
-[Flag anything unusual: files changed outside the main domain, config mutations, deleted code without replacement.]
+[Flag anything unusual, or write "Nothing suspicious."]
 
 ## Files Changed
-[Full list of changed files from git diff]
+[Full list, or "No files changed."]
 
-If there are NO code changes but conversation context exists, still write a meaningful summary of what was discussed.`;
+Keep it concise. The raw conversation is included separately in the session file.`;
 
 export function buildUserPrompt(
   branch: string,
