@@ -4,13 +4,30 @@ import { log } from "./commands/log";
 import { startServer } from "./server";
 import { setupDocker } from "./setup/docker";
 import { loadConfig, applyConfig, hasEnvConfig, runOnboarding, saveConfig } from "./onboarding";
+import { VERSION } from "./version";
 
 async function main() {
   const args = process.argv.slice(2);
   const command = args[0];
 
+  // Global flags
+  if (command === "--version" || command === "-V" || command === "-v") {
+    console.log(`aiscribe v${VERSION}`);
+    process.exit(0);
+  }
+
   if (!command || command === "help" || command === "--help" || command === "-h") {
-    showHelp();
+    showGlobalHelp();
+    process.exit(0);
+  }
+
+  // Command-specific help
+  if (command === "log" && (args[1] === "--help" || args[1] === "-h")) {
+    showLogHelp();
+    process.exit(0);
+  }
+  if (command === "search" && (args[1] === "--help" || args[1] === "-h")) {
+    showSearchHelp();
     process.exit(0);
   }
 
@@ -32,10 +49,14 @@ async function main() {
       const { history } = await import("./commands/patterns");
       await history(args.slice(1));
       break;
+    case "doctor":
+      const { doctor } = await import("./commands/doctor");
+      await doctor();
+      break;
     case "setup":
       if (args.includes("--reconfigure")) {
-        const config = await runOnboarding();
-        applyConfig(config);
+        const cfg = await runOnboarding();
+        applyConfig(cfg);
         console.log("Reconfigured. Run 'aiscribe log' to get started.");
       } else {
         await runSetup();
@@ -53,46 +74,30 @@ async function main() {
 }
 
 async function ensureConfig(): Promise<void> {
-  // Already have env vars set
   if (hasEnvConfig()) return;
-
-  // Load saved config
   const saved = loadConfig();
-  if (saved) {
-    applyConfig(saved);
-    return;
-  }
-
-  // First run: onboard
-  console.log("First time setup: configure your LLM provider.\n");
-  const config = await runOnboarding();
-  applyConfig(config);
+  if (saved) { applyConfig(saved); return; }
+  const cfg = await runOnboarding();
+  applyConfig(cfg);
 }
 
 function ensureConfigOrWarn(): void {
   if (hasEnvConfig()) return;
   const saved = loadConfig();
-  if (saved) {
-    applyConfig(saved);
-    return;
-  }
-  console.log("No API key configured. The web UI will work but summaries need a key.");
-  console.log("Run 'aiscribe setup --reconfigure' to configure.");
+  if (saved) { applyConfig(saved); return; }
+  console.log("No API key. Run 'aiscribe setup --reconfigure' to configure.");
 }
 
 async function runSetup() {
   console.log("Setting up AIScribe Docker environment...\n");
   const result = setupDocker();
   console.log("Generated files:");
-  for (const f of result.files) {
-    console.log(`  ${f}`);
-  }
+  for (const f of result.files) console.log(`  ${f}`);
   console.log(`\nNext steps:`);
   console.log(`  1. cd .aiscribe && docker-compose up -d`);
-  console.log(`  2. aiscribe server       (starts the web UI)`);
+  console.log(`  2. aiscribe server`);
   console.log(`  3. Open http://localhost:3848`);
   console.log(`\nTo change LLM provider: aiscribe setup --reconfigure`);
-  console.log(`\nOr use without Docker: just run 'aiscribe log' anytime.`);
 }
 
 async function runServer(args: string[]) {
@@ -101,37 +106,104 @@ async function runServer(args: string[]) {
   await startServer(port, isDocker);
 }
 
-function showHelp() {
+// ── Help ──
+
+function showGlobalHelp() {
   console.log(`
-aiscribe - Your AI's scribe. Every session, recorded.
+  aiscribe v${VERSION} — Your AI's scribe. Every session, recorded.
 
-Usage:
-  aiscribe log              Journal the current git diff as a session
-  aiscribe log -c           Also capture AI tool prompt history
-  aiscribe search <query>   Search sessions by meaning or keyword
-  aiscribe hotspots         Show files that change most often
-  aiscribe history <file>   Show session timeline for a file
-  aiscribe setup            Generate Docker + database + web UI files
-  aiscribe setup --reconfigure  Change LLM provider or API key
-  aiscribe server           Start the web UI server (localhost:3848)
-  aiscribe help             Show this help
+  ${bold("Usage:")}
+    aiscribe <command> [options]
 
-Examples:
-  aiscribe log              Summarize and store current changes
-  aiscribe log -c           Include Claude Code/Cursor/Codex context
-  aiscribe search payment   Find sessions related to payment code
-  aiscribe history payment.ts  See every session that touched this file
-  aiscribe hotspots         What files change most frequently?
-  aiscribe server           Start the session book web UI
+  ${bold("Commands:")}
+    log         Journal the current git diff as a session
+    search      Search sessions by meaning or keyword
+    hotspots    Show files that change most often
+    history     Show session timeline for a file
+    server      Start the web UI server (localhost:3848)
+    setup       Generate Docker files or reconfigure provider
+    doctor      Check your setup for issues
+    help        Show this help
 
-Configuration:
-  On first run, AIScribe will ask you to select a provider and enter
-  your API key. Config is saved to ~/.aiscribe/config.json
-  Or use env vars: AISCRIBE_PROVIDER and AISCRIBE_API_KEY
+  ${bold("Examples:")}
+    aiscribe log                    Summarize current changes
+    aiscribe log -c                 Include AI tool prompt history
+    aiscribe search payment         Find sessions related to payment
+    aiscribe history payment.ts     See every session touching this file
+    aiscribe hotspots               What files change most often?
+    aiscribe server                 Browse sessions in web UI
+    aiscribe doctor                 Validate your setup
+    aiscribe setup --reconfigure    Change LLM provider or API key
+
+  ${bold("Global flags:")}
+    --version, -v    Show version
+    --help, -h       Show help
+    <command> --help Show help for a specific command
+
+  ${dim("Run 'aiscribe doctor' to check your setup.")}
 `);
 }
 
+function showLogHelp() {
+  console.log(`
+  ${bold("aiscribe log")} — Journal the current git diff
+
+  ${bold("Usage:")}
+    aiscribe log [flags]
+
+  ${bold("Flags:")}
+    -c, --with-context    Capture AI tool prompt history
+    --json                Output as JSON (not yet implemented)
+    -h, --help            Show this help
+
+  ${bold("What it does:")}
+    1. Reads your git diff (staged + unstaged)
+    2. Optionally captures prompts from Claude Code, Codex, or Aider
+    3. Sends to LLM for structured summarization
+    4. Saves as markdown in .aiscribe/sessions/
+
+  ${bold("Examples:")}
+    aiscribe log                Basic session journal
+    aiscribe log -c             Include AI tool context
+    aiscribe log --with-context Same as -c
+
+  ${bold("Configuration:")}
+    First run asks you to select a provider and enter an API key.
+    Saved to ~/.aiscribe/config.json — never asked again.
+    Or set: AISCRIBE_API_KEY and AISCRIBE_PROVIDER env vars.
+`);
+}
+
+function showSearchHelp() {
+  console.log(`
+  ${bold("aiscribe search")} — Find sessions by meaning
+
+  ${bold("Usage:")}
+    aiscribe search <query>
+
+  ${bold("How it works:")}
+    With API key: semantic search using vector embeddings
+    Without API key: keyword search across branches and files
+
+  ${bold("Examples:")}
+    aiscribe search payment      Find payment-related sessions
+    aiscribe search auth bug     Find auth bug fix sessions
+
+  ${bold("Tip:")}
+    Add an API key for smarter semantic search that finds
+    related sessions even without matching keywords.
+`);
+}
+
+// ── Hacks ──
+
+// Quick bold/dim helpers for help text (no terminal module needed)
+function bold(s: string): string { return `\x1b[1m${s}\x1b[0m`; }
+function dim(s: string): string { return `\x1b[2m${s}\x1b[0m`; }
+function green(s: string): string { return `\x1b[32m${s}\x1b[0m`; }
+function red(s: string): string { return `\x1b[31m${s}\x1b[0m`; }
+
 main().catch((err) => {
-  console.error("aiscribe failed:", err.message);
+  console.error(red("aiscribe failed: ") + err.message);
   process.exit(1);
 });
