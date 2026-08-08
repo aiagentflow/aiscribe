@@ -30,6 +30,12 @@ describe("LLM provider detection", () => {
     expect(detectProvider()).toBe("openai");
   });
 
+  it("detects deepseek when AISCRIBE_PROVIDER is set to deepseek", () => {
+    process.env.AISCRIBE_API_KEY = "sk-test123"; // ambiguous, would be openai
+    process.env.AISCRIBE_PROVIDER = "deepseek";
+    expect(detectProvider()).toBe("deepseek");
+  });
+
   it("respects AISCRIBE_PROVIDER override", () => {
     process.env.AISCRIBE_PROVIDER = "ollama";
     process.env.AISCRIBE_API_KEY = "sk-or-test123";

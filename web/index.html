@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIScribe - Session Book</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d1117;color:#c9d1d9;min-height:100vh}
+.container{max-width:900px;margin:0 auto;padding:2rem 1.5rem}
+h1{font-size:1.5rem;font-weight:600;color:#f0f6fc}
+.header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem}
+.logo{display:flex;align-items:center;gap:0.5rem}
+.logo svg{width:24px;height:24px}
+.subtitle{color:#8b949e;font-size:0.85rem}
+.toolbar{display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center;margin-bottom:1.5rem}
+.search{flex:1;min-width:200px;padding:0.55rem 0.85rem;border-radius:8px;border:1px solid #21262d;background:#161b22;color:#c9d1d9;font-size:0.9rem;outline:none}
+.search:focus{border-color:#58a6ff}
+.search::placeholder{color:#484f58}
+.sort-select{padding:0.55rem 0.85rem;border-radius:8px;border:1px solid #21262d;background:#161b22;color:#c9d1d9;font-size:0.85rem;cursor:pointer}
+.session-card{border:1px solid #21262d;border-radius:10px;padding:1.25rem;margin-bottom:0.75rem;cursor:pointer;transition:border-color 0.15s,transform 0.1s;background:#161b22}
+.session-card:hover{border-color:#30363d;transform:translateY(-1px)}
+.card-header{display:flex;justify-content:space-between;align-items:flex-start;gap:0.75rem;margin-bottom:0.5rem}
+.card-title{font-weight:600;font-size:1rem;color:#f0f6fc;word-break:break-word}
+.card-meta{display:flex;gap:1rem;flex-wrap:wrap;font-size:0.8rem;color:#8b949e;margin-bottom:0.4rem}
+.card-snippet{font-size:0.85rem;color:#8b949e;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.badge{font-size:0.7rem;padding:2px 8px;border-radius:12px;white-space:nowrap}
+.badge-tool{background:#23863622;color:#3fb950;border:1px solid #23863644}
+.pagination{display:flex;justify-content:center;align-items:center;gap:0.5rem;margin-top:2rem}
+.page-btn{padding:0.45rem 0.9rem;border-radius:6px;border:1px solid #21262d;background:#161b22;color:#c9d1d9;font-size:0.85rem;cursor:pointer;transition:border-color 0.15s}
+.page-btn:hover:not(:disabled){border-color:#58a6ff}
+.page-btn:disabled{opacity:0.4;cursor:default}
+.page-btn.active{background:#1f6feb22;border-color:#58a6ff;color:#58a6ff}
+.page-info{font-size:0.85rem;color:#8b949e}
+.detail-view{display:none}
+.detail-view.active{display:block}
+.back-btn{background:none;border:1px solid #30363d;color:#c9d1d9;padding:0.5rem 1rem;border-radius:6px;cursor:pointer;font-size:0.85rem;margin-bottom:1.5rem}
+.back-btn:hover{border-color:#58a6ff;color:#f0f6fc}
+.detail-meta{display:flex;gap:1rem;flex-wrap:wrap;font-size:0.85rem;color:#8b949e;margin-bottom:1.5rem}
+.detail-content{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:1.5rem;font-size:0.9rem;line-height:1.7;white-space:pre-wrap;overflow-x:auto}
+.detail-content h2{font-size:1.15rem;color:#f0f6fc;margin:1.25rem 0 0.5rem}
+.detail-content h3{font-size:1rem;color:#f0f6fc;margin:1rem 0 0.4rem}
+.detail-content strong{color:#f0f6fc}
+.detail-content ul,.detail-content ol{padding-left:1.5rem;margin:0.5rem 0}
+.detail-content li{margin:0.25rem 0}
+.detail-content code{background:#0d1117;padding:1px 5px;border-radius:3px;font-size:0.85em}
+.empty-state{text-align:center;padding:4rem 2rem;color:#8b949e}
+.empty-icon{font-size:3rem;margin-bottom:1rem}
+.loading{text-align:center;padding:2rem;color:#8b949e}
+.stats{display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1.5rem}
+.stat{background:#161b22;border:1px solid #21262d;border-radius:8px;padding:0.75rem 1rem;text-align:center;min-width:80px}
+.stat-value{font-size:1.25rem;font-weight:600;color:#f0f6fc}
+.stat-label{font-size:0.7rem;color:#8b949e;text-transform:uppercase;letter-spacing:0.05em}
+</style>
+</head>
+<body>
+<div class="container" id="app">
+
+  <div id="list-view">
+    <div class="header">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="5" stroke="#f0f6fc" stroke-width="1.5"/><path d="M6 8h12M6 12h12M6 16h8" stroke="#f0f6fc" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <div><h1>AIScribe</h1><p class="subtitle">Session Book</p></div>
+      </div>
+      <div class="stats" id="stats"></div>
+    </div>
+    <div class="toolbar">
+      <input class="search" type="text" id="search" placeholder="Search sessions..." oninput="search()">
+      <select class="sort-select" id="sort" onchange="search()">
+        <option value="date">Newest first</option>
+        <option value="files">Most files</option>
+        <option value="changes">Most changes</option>
+      </select>
+    </div>
+    <div id="sessions-list"><div class="loading">Loading...</div></div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+
+  <div class="detail-view" id="detail-view">
+    <button class="back-btn" onclick="showList()">Back to sessions</button>
+    <div id="detail-content"></div>
+  </div>
+</div>
+
+<script>
+var currentPage = 1;
+var totalPages = 1;
+
+function load() {
+  var q = document.getElementById('search').value;
+  var sort = document.getElementById('sort').value;
+  var url = '/api/sessions?page=' + currentPage + '&search=' + encodeURIComponent(q) + '&sort=' + sort;
+
+  fetch(url).then(function(res) { return res.json(); }).then(function(data) {
+    totalPages = data.pages;
+    renderStats(data.total);
+    renderList(data.items);
+    renderPagination();
+  }).catch(function() {
+    document.getElementById('sessions-list').innerHTML = '<div class="empty-state"><div class="empty-icon">\uD83D\uDD0C</div><p>Could not connect to server.</p></div>';
+  });
+}
+
+function renderStats(total) {
+  document.getElementById('stats').innerHTML =
+    '<div class="stat"><div class="stat-value">' + total + '</div><div class="stat-label">Sessions</div></div>';
+}
+
+function renderList(items) {
+  var el = document.getElementById('sessions-list');
+  if (!items.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">\uD83D\uDCDD</div><p>No sessions found.</p><p style="font-size:0.85rem;margin-top:0.5rem">Run <code>aiscribe log</code> in your project.</p></div>';
+    return;
+  }
+  el.innerHTML = items.map(function(s) {
+    var date = new Date(s.date).toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'});
+    var badges = '';
+    if (s.aiTool) badges += '<span class="badge badge-tool">' + esc(s.aiTool) + '</span> ';
+    return '<div class="session-card" onclick="showSession(\'' + s.id + '\')">' +
+      '<div class="card-header">' +
+        '<span class="card-title">' + esc(s.branch) + '</span>' +
+        badges +
+      '</div>' +
+      '<div class="card-meta">' +
+        '<span>' + date + '</span>' +
+        '<span>' + s.filesChanged + ' files</span>' +
+        '<span>+' + s.insertions + '/-' + s.deletions + '</span>' +
+      '</div>' +
+      (s.summarySnippet ? '<div class="card-snippet">' + esc(s.summarySnippet) + '</div>' : '') +
+    '</div>';
+  }).join('');
+}
+
+function renderPagination() {
+  var el = document.getElementById('pagination');
+  if (totalPages <= 1) { el.innerHTML = ''; return; }
+  var html = '<button class="page-btn" onclick="goPage(' + (currentPage-1) + ')"' + (currentPage<=1?' disabled':'') + '>Prev</button>';
+  html += '<span class="page-info">Page ' + currentPage + ' of ' + totalPages + '</span>';
+  html += '<button class="page-btn" onclick="goPage(' + (currentPage+1) + ')"' + (currentPage>=totalPages?' disabled':'') + '>Next</button>';
+  el.innerHTML = html;
+}
+
+function goPage(p) {
+  if (p < 1 || p > totalPages) return;
+  currentPage = p;
+  load();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function search() {
+  currentPage = 1;
+  load();
+}
+
+function showSession(id) {
+  fetch('/api/sessions/' + id).then(function(res) { return res.json(); }).then(function(s) {
+    if (s.error) { document.getElementById('detail-content').innerHTML = '<p>Session not found.</p>'; return; }
+    document.getElementById('list-view').style.display = 'none';
+    document.getElementById('detail-view').classList.add('active');
+    var date = new Date(s.date).toLocaleDateString('en-US', {month:'long',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    var meta = '<div class="detail-meta">' +
+      '<span>' + date + '</span>' +
+      '<span>' + s.filesChanged + ' files</span>' +
+      '<span>+' + s.insertions + '/-' + s.deletions + '</span>' +
+      (s.aiTool ? '<span class="badge badge-tool">' + esc(s.aiTool) + '</span>' : '') +
+      '</div>';
+    var summary = s.summary || 'No summary available.';
+    document.getElementById('detail-content').innerHTML =
+      '<h1>' + esc(s.branch) + '</h1>' + meta + '<div class="detail-content">' + renderMarkdown(summary) + '</div>';
+  }).catch(function() {
+    document.getElementById('detail-content').innerHTML = '<p>Could not load session.</p>';
+  });
+}
+
+function showList() {
+  document.getElementById('list-view').style.display = 'block';
+  document.getElementById('detail-view').classList.remove('active');
+}
+
+function renderMarkdown(md) {
+  return md
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/^### (.+)$/gm,'<h3>$1</h3>')
+    .replace(/^## (.+)$/gm,'<h2>$1</h2>')
+    .replace(/^# (.+)$/gm,'<h2>$1</h2>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/^- (.+)$/gm,'<li>$1</li>')
+    .replace(/\n/g,'<br>');
+}
+
+function esc(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+load();
+</script>
+</body>
+</html>

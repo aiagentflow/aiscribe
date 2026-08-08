@@ -1,18 +1,19 @@
 // LLM provider abstraction
-// Supports: Anthropic, OpenAI, OpenRouter (200+ models), Ollama (local)
+// Supports: OpenRouter, Anthropic, OpenAI, DeepSeek, Ollama, custom endpoints
 //
 // Config via env vars:
-//   AISCRIBE_PROVIDER=openrouter|anthropic|openai|ollama
-//   AISCRIBE_API_KEY=...          (for openrouter/anthropic/openai)
+//   AISCRIBE_PROVIDER=openrouter|anthropic|openai|deepseek|custom|ollama
+//   AISCRIBE_API_KEY=...          (universal key)
 //   AISCRIBE_MODEL=<model-id>     (optional, overrides default)
+//   AISCRIBE_BASE_URL=<url>       (for custom provider)
 //   OLLAMA_HOST=http://localhost:11434  (for ollama)
 
 import * as https from "https";
 import * as http from "http";
 
-// ── Types ──
+// Types
 
-type ProviderName = "openrouter" | "anthropic" | "openai" | "ollama";
+type ProviderName = "openrouter" | "anthropic" | "openai" | "deepseek" | "custom" | "ollama";
 
 interface ChatMessage {
   role: "system" | "user";
@@ -25,77 +26,69 @@ interface ProviderConfig {
   baseUrl?: string;
 }
 
-// ── Defaults ──
+// Defaults
 
 const DEFAULTS: Record<ProviderName, { model: string; baseUrl: string }> = {
-  openrouter: {
-    model: "anthropic/claude-sonnet-4",
-    baseUrl: "https://openrouter.ai/api/v1",
-  },
-  anthropic: {
-    model: "claude-sonnet-4-20250514",
-    baseUrl: "https://api.anthropic.com/v1",
-  },
-  openai: {
-    model: "gpt-4o-mini",
-    baseUrl: "https://api.openai.com/v1",
-  },
-  ollama: {
-    model: "llama3.1:8b",
-    baseUrl: "http://localhost:11434/api",
-  },
+  openrouter:  { model: "anthropic/claude-sonnet-4", baseUrl: "https://openrouter.ai/api/v1" },
+  anthropic:   { model: "claude-sonnet-4-20250514",  baseUrl: "https://api.anthropic.com/v1" },
+  openai:      { model: "gpt-4o-mini",               baseUrl: "https://api.openai.com/v1" },
+  deepseek:    { model: "deepseek-chat",              baseUrl: "https://api.deepseek.com/v1" },
+  custom:      { model: "gpt-4o-mini",               baseUrl: process.env.AISCRIBE_BASE_URL || "https://api.openai.com/v1" },
+  ollama:      { model: "llama3.1:8b",               baseUrl: "http://localhost:11434/api" },
 };
 
-// ── Auto-detect provider ──
+// Auto-detect provider
 
 export function detectProvider(): ProviderName {
   const explicit = process.env.AISCRIBE_PROVIDER as ProviderName | undefined;
   if (explicit && Object.keys(DEFAULTS).includes(explicit)) return explicit;
 
-  // Detect by AISCRIBE_API_KEY prefix
   const key = process.env.AISCRIBE_API_KEY;
   if (key) {
     if (key.startsWith("sk-ant-")) return "anthropic";
     if (key.startsWith("sk-or-")) return "openrouter";
-    if (key.startsWith("sk-")) return "openai";
-    return "openrouter"; // default for unknown prefixes
+    if (key.startsWith("sk-")) return "openai"; // ambiguous: could be DeepSeek too. Falls back.
+    return "openrouter";
   }
 
-  // Fallback to legacy env vars
   if (process.env.ANTHROPIC_API_KEY) return "anthropic";
   if (process.env.OPENAI_API_KEY) return "openai";
-
   return "ollama";
 }
 
 function getApiKey(provider: ProviderName): string | undefined {
   switch (provider) {
-    case "openrouter":
+    case "openrouter": case "deepseek": case "custom":
       return process.env.AISCRIBE_API_KEY;
-    case "anthropic":
-      return process.env.AISCRIBE_API_KEY || process.env.ANTHROPIC_API_KEY;
     case "openai":
       return process.env.AISCRIBE_API_KEY || process.env.OPENAI_API_KEY;
+    case "anthropic":
+      return process.env.AISCRIBE_API_KEY || process.env.ANTHROPIC_API_KEY;
     case "ollama":
-      return undefined; // No key needed
+      return undefined;
   }
 }
 
-// ── Public API ──
+function buildProviderFallbackChain(detected: ProviderName): ProviderName[] {
+  const chain = [detected];
+  if (detected === "openai") chain.push("deepseek", "custom");
+  else if (detected === "deepseek") chain.push("openai", "custom");
+  else if (detected === "custom") chain.push("openai", "deepseek");
+  return chain;
+}
+
+// Public API
 
 export async function generateSummary(
   systemPrompt: string,
   userPrompt: string
 ): Promise<string> {
   const provider = detectProvider();
-  const model = process.env.AISCRIBE_MODEL || DEFAULTS[provider].model;
   const apiKey = getApiKey(provider);
 
-  // Validate key for non-Ollama providers
   if (provider !== "ollama" && !apiKey) {
     throw new Error(
-      `No API key found for ${provider}.\n` +
-      `Set AISCRIBE_API_KEY (for OpenRouter) or ANTHROPIC_API_KEY or OPENAI_API_KEY.\n` +
+      `No API key found. Set AISCRIBE_API_KEY for ${provider}.\n` +
       `Or use Ollama: AISCRIBE_PROVIDER=ollama`
     );
   }
@@ -105,34 +98,51 @@ export async function generateSummary(
     { role: "user", content: userPrompt },
   ];
 
-  switch (provider) {
-    case "openrouter":
-      return openRouterChat(messages, { apiKey, model, baseUrl: DEFAULTS.openrouter.baseUrl });
-    case "anthropic":
-      return anthropicChat(messages, { apiKey, model });
-    case "openai":
-      return openAIChat(messages, { apiKey, model });
-    case "ollama":
-      return ollamaChat(messages, { model });
-    default:
-      throw new Error(`Unknown provider: ${provider}`);
+  const providersToTry = buildProviderFallbackChain(provider);
+  let lastError: Error | null = null;
+  const tried: string[] = [];
+
+  for (const p of providersToTry) {
+    const pKey = getApiKey(p);
+    if (p !== "ollama" && !pKey) continue;
+
+    try {
+      tried.push(p);
+      switch (p) {
+        case "openrouter": case "openai": case "deepseek": case "custom":
+          return openAICompatibleChat(messages, {
+            apiKey: pKey,
+            model: process.env.AISCRIBE_MODEL || DEFAULTS[p].model,
+            baseUrl: p === "custom" ? (process.env.AISCRIBE_BASE_URL || DEFAULTS.custom.baseUrl) : DEFAULTS[p].baseUrl,
+          });
+        case "anthropic":
+          return anthropicChat(messages, { apiKey: pKey, model: process.env.AISCRIBE_MODEL || DEFAULTS.anthropic.model });
+        case "ollama":
+          return ollamaChat(messages, { model: process.env.AISCRIBE_MODEL || DEFAULTS.ollama.model });
+      }
+    } catch (err: any) {
+      lastError = err;
+      if (err.message && (err.message.includes("401") || err.message.includes("403"))) {
+        continue; // fallback to next provider
+      }
+      throw err;
+    }
   }
+
+  const hint = tried.length > 1
+    ? `\nTried: ${tried.join(", ")}.\nTip: Set AISCRIBE_PROVIDER explicitly (openrouter | anthropic | openai | deepseek | custom | ollama).`
+    : `\nTip: Set AISCRIBE_PROVIDER=deepseek if using a DeepSeek key.`;
+  throw new Error((lastError?.message || "All providers failed") + hint);
 }
 
-// ── OpenRouter (OpenAI-compatible) ──
-// Covers: Claude, GPT, DeepSeek, Qwen, Gemini, Llama, Mistral, etc.
-// Model IDs: https://openrouter.ai/models
+// OpenAI-compatible chat (OpenAI, OpenRouter, DeepSeek, custom)
 
-async function openRouterChat(
+async function openAICompatibleChat(
   messages: ChatMessage[],
   config: ProviderConfig
 ): Promise<string> {
   if (!config.apiKey) {
-    throw new Error(
-      "AISCRIBE_API_KEY is required for OpenRouter.\n" +
-        "Get a key: https://openrouter.ai/keys\n" +
-        "Then: export AISCRIBE_API_KEY=sk-or-..."
-    );
+    throw new Error("AISCRIBE_API_KEY is required.");
   }
 
   const body = JSON.stringify({
@@ -141,32 +151,32 @@ async function openRouterChat(
     max_tokens: 2000,
   });
 
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${config.apiKey}`,
+  };
+
+  if (config.baseUrl?.includes("openrouter.ai")) {
+    headers["HTTP-Referer"] = "https://github.com/aiagentflow/aiscribe";
+    headers["X-Title"] = "aiscribe";
+  }
+
   const data = await fetchJSON(config.baseUrl + "/chat/completions", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${config.apiKey}`,
-      "HTTP-Referer": "https://github.com/aiagentflow/aiscribe",
-      "X-Title": "aiscribe",
-    },
+    headers,
     body,
   });
 
   return data.choices[0].message.content;
 }
 
-// ── Anthropic (native API) ──
+// Anthropic (native API)
 
 async function anthropicChat(
   messages: ChatMessage[],
   config: ProviderConfig
 ): Promise<string> {
-  if (!config.apiKey) {
-    throw new Error(
-      "AISCRIBE_API_KEY or ANTHROPIC_API_KEY is required.\n" +
-        "Then: export AISCRIBE_API_KEY=sk-ant-..."
-    );
-  }
+  if (!config.apiKey) throw new Error("API key required for Anthropic.");
 
   const systemMsg = messages.find((m) => m.role === "system")?.content || "";
   const userMsgs = messages.filter((m) => m.role === "user");
@@ -191,38 +201,7 @@ async function anthropicChat(
   return data.content[0].text;
 }
 
-// ── OpenAI (native API) ──
-
-async function openAIChat(
-  messages: ChatMessage[],
-  config: ProviderConfig
-): Promise<string> {
-  if (!config.apiKey) {
-    throw new Error(
-      "AISCRIBE_API_KEY or OPENAI_API_KEY is required.\n" +
-        "Then: export AISCRIBE_API_KEY=sk-..."
-    );
-  }
-
-  const body = JSON.stringify({
-    model: config.model,
-    messages: messages.map((m) => ({ role: m.role, content: m.content })),
-    max_tokens: 2000,
-  });
-
-  const data = await fetchJSON(DEFAULTS.openai.baseUrl + "/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${config.apiKey}`,
-    },
-    body,
-  });
-
-  return data.choices[0].message.content;
-}
-
-// ── Ollama (local) ──
+// Ollama (local)
 
 async function ollamaChat(
   messages: ChatMessage[],
@@ -245,7 +224,7 @@ async function ollamaChat(
   return data.message.content;
 }
 
-// ── HTTP helper ──
+// HTTP helper
 
 async function fetchJSON(
   url: string,
@@ -258,20 +237,13 @@ async function fetchJSON(
   return new Promise((resolve, reject) => {
     const req = transport.request(
       url,
-      {
-        method: options.method,
-        headers: options.headers,
-      },
+      { method: options.method, headers: options.headers },
       (res) => {
         let body = "";
         res.on("data", (chunk: Buffer) => (body += chunk.toString()));
         res.on("end", () => {
           if (res.statusCode && res.statusCode >= 400) {
-            reject(
-              new Error(
-                `API error (${res.statusCode}): ${body.slice(0, 300)}`
-              )
-            );
+            reject(new Error(`API error (${res.statusCode}): ${body.slice(0, 300)}`));
             return;
           }
           try {
@@ -284,13 +256,10 @@ async function fetchJSON(
     );
 
     req.on("error", (err: Error) => {
-      reject(
-        new Error(
-          `Network error: ${err.message}\n` +
-          `Provider may be unreachable. Check your network or try a different provider.\n` +
-          `Set AISCRIBE_PROVIDER to change: openrouter | anthropic | openai | ollama`
-        )
-      );
+      reject(new Error(
+        `Network error: ${err.message}\n` +
+        `Provider may be unreachable. Try a different AISCRIBE_PROVIDER.`
+      ));
     });
 
     req.write(options.body);
