@@ -31,6 +31,10 @@ async function main() {
     showSearchHelp();
     process.exit(0);
   }
+  if (args[1] === "--help" || args[1] === "-h") {
+    showCommandHelp(command);
+    process.exit(0);
+  }
 
   switch (command) {
     case "log":
@@ -249,6 +253,22 @@ function showSearchHelp() {
     Add an API key for smarter semantic search that finds
     related sessions even without matching keywords.
 `);
+}
+
+function showCommandHelp(cmd: string) {
+  const helps: Record<string, string> = {
+    context: "aiscribe context — Export session history for AI agents\n  Usage: aiscribe context [--last N] [--format plain|json]\n  aiscribe context --last 5 --format plain",
+    export: "aiscribe export — Export sessions in various formats\n  Usage: aiscribe export --format json|csv|ai [--session id] [--output file]",
+    sync: "aiscribe sync — Push local sessions to server\n  Usage: aiscribe sync [--dry-run] [--force]",
+    remote: "aiscribe remote — Git remote backup\n  Usage: aiscribe remote              Show status\n         aiscribe remote set <url>    Configure backup repo\n         aiscribe remote disable       Turn off backup",
+    doctor: "aiscribe doctor — Validate your setup\n  Checks: Node.js, Git, git repo, API key, storage, config file",
+    server: "aiscribe server — Start web UI\n  Usage: aiscribe server [--docker]\n  Opens http://localhost:3848",
+    hotspots: "aiscribe hotspots — Files that change most often\n  Usage: aiscribe hotspots [count]",
+    history: "aiscribe history — Timeline for a file\n  Usage: aiscribe history <file-path>",
+    watch: "aiscribe watch — Auto-detect AI sessions\n  Usage: aiscribe watch [--interval 30]",
+    status: "aiscribe status — Active AI coding sessions\n  Usage: aiscribe status",
+  };
+  console.log(`\n  ${bold(helps[cmd] || `No detailed help for '${cmd}'. Run 'aiscribe help' for all commands.`)}\n`);
 }
 
 main().catch((err) => {
