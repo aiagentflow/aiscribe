@@ -1,10 +1,14 @@
 {
   "name": "aiscribe",
-  "version": "0.0.6",
-  "description": "Your AI's scribe. Every session, recorded.",
+  "version": "0.0.7",
+  "description": "Your AI's scribe. Every session, recorded. One command journals your AI coding session into a structured, searchable log.",
   "main": "dist/index.js",
   "bin": {
     "aiscribe": "dist/index.js"
+  },
+  "homepage": "https://aiagentflow.dev/aiscribe",
+  "bugs": {
+    "url": "https://github.com/aiagentflow/aiscribe/issues"
   },
   "scripts": {
     "build": "tsc",

@@ -1,9 +1,10 @@
 ---
 id: TASK-5
 title: 'Fix: DeepSeek and custom provider support'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-08 12:38'
+updated_date: '2026-08-08 12:41'
 labels: []
 dependencies: []
 ordinal: 5000

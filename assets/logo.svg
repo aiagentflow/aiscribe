@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120" fill="none">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#58a6ff"/>
+      <stop offset="1" stop-color="#3fb950"/>
+    </linearGradient>
+  </defs>
+  <!-- Book icon -->
+  <rect x="20" y="15" width="55" height="70" rx="4" stroke="url(#g)" stroke-width="2.5" fill="#161b22"/>
+  <line x1="47" y1="15" x2="47" y2="85" stroke="url(#g)" stroke-width="1.5"/>
+  <line x1="28" y1="30" x2="42" y2="30" stroke="#8b949e" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="28" y1="40" x2="42" y2="40" stroke="#8b949e" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="28" y1="50" x2="38" y2="50" stroke="#8b949e" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="52" y1="30" x2="68" y2="30" stroke="#8b949e" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="52" y1="40" x2="68" y2="40" stroke="#8b949e" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="52" y1="50" x2="65" y2="50" stroke="#8b949e" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="28" y1="65" x2="55" y2="65" stroke="#8b949e" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="28" y1="73" x2="48" y2="73" stroke="#8b949e" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Text -->
+  <text x="90" y="48" font-family="system-ui,-apple-system,sans-serif" font-weight="700" font-size="32" fill="#f0f6fc">AIScribe</text>
+  <text x="90" y="76" font-family="system-ui,-apple-system,sans-serif" font-weight="400" font-size="16" fill="#8b949e">Your AI's scribe. Every session, recorded.</text>
+  <!-- Pen tip under book -->
+  <path d="M38 88 L45 95 L42 98 L35 91 Z" fill="#3fb950" opacity="0.7"/>
+  <line x1="42" y1="98" x2="50" y2="108" stroke="#3fb950" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+</svg>

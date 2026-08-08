@@ -1,9 +1,10 @@
 ---
 id: TASK-6
 title: 'Interactive onboarding: provider selection and API key setup'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-08 12:39'
+updated_date: '2026-08-08 12:41'
 labels: []
 dependencies: []
 ordinal: 6000

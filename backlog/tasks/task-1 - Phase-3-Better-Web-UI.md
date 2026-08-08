@@ -1,10 +1,10 @@
 ---
 id: TASK-1
 title: 'Phase 3: Better Web UI'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-08 12:34'
-updated_date: '2026-08-08 12:35'
+updated_date: '2026-08-08 12:41'
 labels: []
 dependencies: []
 ordinal: 1000
