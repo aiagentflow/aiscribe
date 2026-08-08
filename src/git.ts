@@ -12,27 +12,52 @@ export interface DiffResult {
   };
 }
 
+let isGitRepo: boolean | null = null;
+
+async function checkGitRepo(): Promise<boolean> {
+  if (isGitRepo !== null) return isGitRepo;
+  try {
+    await git.status();
+    isGitRepo = true;
+  } catch {
+    isGitRepo = false;
+  }
+  return isGitRepo;
+}
+
 export async function getDiff(): Promise<DiffResult> {
-  // Get both staged and unstaged changes
-  const diff = await git.diff();
-  const diffStaged = await git.diff(["--cached"]);
-  const fullDiff = [diffStaged, diff].filter((d) => d.trim()).join("\n");
+  if (!(await checkGitRepo())) {
+    return { files: [], diff: "", stats: { insertions: 0, deletions: 0, filesChanged: 0 } };
+  }
 
-  const summary = await git.diffSummary();
+  try {
+    const diff = await git.diff();
+    const diffStaged = await git.diff(["--cached"]);
+    const fullDiff = [diffStaged, diff].filter((d) => d.trim()).join("\n");
 
-  const stats = {
-    insertions: summary.insertions + (await git.diffSummary(["--cached"])).insertions,
-    deletions: summary.deletions + (await git.diffSummary(["--cached"])).deletions,
-    filesChanged:
-      summary.files.length + (await git.diffSummary(["--cached"])).files.length,
-  };
+    const summary = await git.diffSummary();
+    const cachedSummary = await git.diffSummary(["--cached"]);
 
-  const files = summary.files.map((f) => f.file);
-
-  return { files, diff: fullDiff, stats };
+    return {
+      files: [...summary.files, ...cachedSummary.files].map((f) => f.file),
+      diff: fullDiff,
+      stats: {
+        insertions: summary.insertions + cachedSummary.insertions,
+        deletions: summary.deletions + cachedSummary.deletions,
+        filesChanged: summary.files.length + cachedSummary.files.length,
+      },
+    };
+  } catch {
+    return { files: [], diff: "", stats: { insertions: 0, deletions: 0, filesChanged: 0 } };
+  }
 }
 
 export async function getBranchName(): Promise<string> {
-  const status = await git.status();
-  return status.current || "unknown-branch";
+  if (!(await checkGitRepo())) return "no-git-repo";
+  try {
+    const status = await git.status();
+    return status.current || "unknown";
+  } catch {
+    return "unknown";
+  }
 }
