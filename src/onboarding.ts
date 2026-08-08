@@ -39,7 +39,7 @@ export function applyConfig(config: SavedConfig): void {
 }
 
 export function hasEnvConfig(): boolean {
-  return !!(process.env.AISCRIBE_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY);
+  return !!(process.env.AISCRIBE_API_KEY || process.env.AISCRIBE_PROVIDER || process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY);
 }
 
 const PROVIDERS: { id: string; name: string; desc: string; keyHint: string }[] = [
