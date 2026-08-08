@@ -145,6 +145,66 @@ export async function startServer(port = 3848, isDocker = false) {
     }
   );
 
+  // POST: store a session (used by aiscribe sync)
+  fastify.post("/api/sessions", async (req, reply) => {
+    const body = req.body as SessionData;
+    if (!body.id || !body.branch) {
+      reply.code(400);
+      return { error: "id and branch are required" };
+    }
+    store.add({
+      id: body.id,
+      date: body.date || new Date().toISOString(),
+      branch: body.branch,
+      filesChanged: body.filesChanged || 0,
+      insertions: body.insertions || 0,
+      deletions: body.deletions || 0,
+      summary: body.summary || "",
+      aiTool: body.aiTool || null,
+    });
+    reply.code(201);
+    return { ok: true, id: body.id };
+  });
+
+  // Agent-friendly context endpoint
+  fastify.get<{ Querystring: { last?: string } }>(
+    "/api/context",
+    async (req) => {
+      const last = Math.min(parseInt(req.query.last || "5") || 5, 20);
+      const sessions = store.getAll().slice(0, last);
+      const context = sessions.map((s) => ({
+        branch: s.branch,
+        date: new Date(s.date).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }),
+        files: s.filesChanged,
+        changes: `+${s.insertions}/-${s.deletions}`,
+        tool: s.aiTool || null,
+        summary: (s.summary || "").replace(/^#+\s+/gm, "").trim().slice(0, 300),
+      }));
+      return {
+        project: path.basename(process.cwd()),
+        sessions: context,
+        total: store.count(),
+      };
+    }
+  );
+
+  // Recent sessions metadata (lightweight for agents)
+  fastify.get("/api/sessions/recent", async () => {
+    return store.getAll().slice(0, 20).map((s) => ({
+      id: s.id,
+      branch: s.branch,
+      date: s.date,
+      files: s.filesChanged,
+      insertions: s.insertions,
+      deletions: s.deletions,
+      tool: s.aiTool,
+    }));
+  });
+
   // ── Web UI ──
 
   // Serve web directory as static files

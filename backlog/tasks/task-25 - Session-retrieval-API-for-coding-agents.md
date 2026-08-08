@@ -1,9 +1,10 @@
 ---
 id: TASK-25
 title: Session retrieval API for coding agents
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-08-08 13:16'
+updated_date: '2026-08-08 13:28'
 labels: []
 dependencies: []
 ordinal: 25000

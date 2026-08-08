@@ -1,10 +1,10 @@
 ---
 id: TASK-22
 title: 'aiscribe context: expose session history to AI agents'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-08 13:16'
-updated_date: '2026-08-08 13:16'
+updated_date: '2026-08-08 13:18'
 labels: []
 dependencies: []
 ordinal: 22000

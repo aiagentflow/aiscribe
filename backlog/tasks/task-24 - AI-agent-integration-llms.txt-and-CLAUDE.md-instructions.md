@@ -1,10 +1,10 @@
 ---
 id: TASK-24
 title: 'AI agent integration: llms.txt and CLAUDE.md instructions'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-08 13:16'
-updated_date: '2026-08-08 13:16'
+updated_date: '2026-08-08 13:18'
 labels: []
 dependencies: []
 ordinal: 24000

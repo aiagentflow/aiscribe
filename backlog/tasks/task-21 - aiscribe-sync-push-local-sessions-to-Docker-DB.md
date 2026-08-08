@@ -1,10 +1,10 @@
 ---
 id: TASK-21
 title: 'aiscribe sync: push local sessions to Docker DB'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-08 13:16'
-updated_date: '2026-08-08 13:16'
+updated_date: '2026-08-08 13:18'
 labels: []
 dependencies: []
 ordinal: 21000

@@ -69,6 +69,10 @@ async function main() {
       const { sync } = await import("./commands/sync");
       await sync(args.slice(1));
       break;
+    case "export":
+      const { exportSessions } = await import("./commands/export");
+      await exportSessions(args.slice(1));
+      break;
     case "setup":
       if (args.includes("--reconfigure")) {
         const cfg = await runOnboarding();

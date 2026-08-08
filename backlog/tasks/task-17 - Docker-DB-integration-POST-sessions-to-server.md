@@ -1,9 +1,10 @@
 ---
 id: TASK-17
 title: 'Docker DB integration: POST sessions to server'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-08-08 13:06'
+updated_date: '2026-08-08 13:28'
 labels: []
 dependencies: []
 ordinal: 17000

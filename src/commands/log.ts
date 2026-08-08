@@ -3,6 +3,7 @@ import { generateSummary } from "../llm";
 import { SYSTEM_PROMPT, buildUserPrompt } from "../prompt";
 import { saveSession } from "../storage";
 import { captureContext, formatContextForPrompt } from "../context/capture";
+import * as path from "path";
 import {
   bold, dim, green, cyan, yellow, gray, red,
   createSpinner, boxTop, boxLine, boxMid, boxBot,
@@ -128,7 +129,31 @@ export async function log(args: string[]): Promise<void> {
       hasEmbedding ? { vector: [], model: "", generated: "" } : null
     );
 
-    // 6. Output
+    // 6. Try to POST to server if running (Docker DB integration)
+    try {
+      const serverUrl = process.env.AISCRIBE_SERVER || "http://localhost:3848";
+      const healthRes = await fetch(`${serverUrl}/api/health`);
+      if (healthRes.ok) {
+        await fetch(`${serverUrl}/api/sessions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: path.basename(filepath).replace(".md", ""),
+            branch,
+            date: new Date().toISOString(),
+            filesChanged: diff.stats.filesChanged,
+            insertions: diff.stats.insertions,
+            deletions: diff.stats.deletions,
+            summary: summary,
+            aiTool: contextTool,
+          }),
+        });
+      }
+    } catch {
+      // Server not running, that's fine
+    }
+
+    // 7. Output
     if (isJson) {
       jsonSuccess(cmdName, {
         branch,
