@@ -90,12 +90,10 @@ export async function watch(args?: string[]): Promise<void> {
     }
   }, interval);
 
-  // Handle Ctrl+C
-  process.on("SIGINT", () => {
-    clearInterval(timer);
-    console.log(`\n${gray("  Watching stopped.")}`);
-    process.exit(0);
-  });
+  // Handle Ctrl+C - clean up timer
+  const cleanup = () => { clearInterval(timer); process.exit(0); };
+  process.on("SIGINT", cleanup);
+  process.on("SIGTERM", cleanup);
 
   // Keep running
   await new Promise(() => {}); // Never resolves, process stays alive
