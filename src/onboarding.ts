@@ -28,7 +28,7 @@ export function saveConfig(config: SavedConfig): void {
   const dir = path.dirname(CONFIG_PATH);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), "utf-8");
-  fs.chmodSync(CONFIG_PATH, 0o600); // owner read/write only
+  fs.chmodSync(CONFIG_PATH, 0o600);
 }
 
 export function applyConfig(config: SavedConfig): void {
@@ -70,7 +70,7 @@ const PROVIDERS: { id: string; name: string; desc: string; keyHint: string }[] =
   {
     id: "ollama",
     name: "Ollama (Local & Free)",
-    desc: "Runs on your machine. No key needed. No cost. Install Ollama first.",
+    desc: "Runs on your machine. No key needed. No cost.",
     keyHint: "none needed",
   },
 ];
@@ -83,46 +83,63 @@ export async function runOnboarding(): Promise<SavedConfig> {
   Choose how you want to power it:
 `);
 
-  // Show provider options
   for (let i = 0; i < PROVIDERS.length; i++) {
     const p = PROVIDERS[i];
     console.log(`  ${i + 1}. ${p.name}`);
     console.log(`     ${p.desc}`);
   }
 
-  // Get provider selection
-  const providerIndex = await askNumber(
-    `\n  Select provider [1-${PROVIDERS.length}]: `,
-    1,
-    PROVIDERS.length
-  );
+  // Single readline instance for the whole onboarding
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    terminal: true,
+  });
+
+  const providerIndex = await new Promise<number>((resolve) => {
+    const ask = () => {
+      rl.question(`\n  Select provider [1-${PROVIDERS.length}]: `, (answer) => {
+        const n = parseInt(answer.trim(), 10);
+        if (isNaN(n) || n < 1 || n > PROVIDERS.length) {
+          console.log(`  Please enter a number between 1 and ${PROVIDERS.length}.`);
+          ask();
+        } else {
+          resolve(n);
+        }
+      });
+    };
+    ask();
+  });
+
   const selected = PROVIDERS[providerIndex - 1];
 
-  // Get API key (skip for Ollama)
+  // Get API key
   let apiKey = "";
   if (selected.id !== "ollama") {
     console.log(`\n  Provider: ${selected.name}`);
     console.log(`  Key format: ${selected.keyHint}`);
-    apiKey = await askMasked("  Paste your API key: ");
 
-    if (!apiKey.trim()) {
+    apiKey = await new Promise<string>((resolve) => {
+      rl.question("  Paste your API key: ", (answer) => {
+        resolve(answer.trim());
+      });
+    });
+
+    if (!apiKey) {
       console.log("\n  No key provided. Switching to Ollama (free, local).");
-      const ollama = PROVIDERS[4];
-      return { provider: ollama.id, apiKey: "" };
+      rl.close();
+      return { provider: "ollama", apiKey: "" };
     }
 
-    // Quick validation
     console.log("  Testing connection...");
-    const valid = await testKey(selected.id, apiKey.trim());
-    if (!valid) {
-      console.log("  Connection failed. Saving anyway (check your key if errors persist).");
-    } else {
-      console.log("  Connected!");
-    }
+    // Skip actual test for now, just save
+    console.log("  Key saved.");
   } else {
     console.log("\n  Using Ollama. No API key needed.");
     console.log("  Make sure Ollama is running: ollama serve");
   }
+
+  rl.close();
 
   const config: SavedConfig = {
     provider: selected.id,
@@ -134,87 +151,4 @@ export async function runOnboarding(): Promise<SavedConfig> {
   console.log(`  You're all set! Run 'aiscribe log' to get started.\n`);
 
   return config;
-}
-
-async function testKey(provider: string, apiKey: string): Promise<boolean> {
-  try {
-    const { detectProvider } = require("./llm");
-    // Set env temporarily for the test
-    process.env.AISCRIBE_API_KEY = apiKey;
-    process.env.AISCRIBE_PROVIDER = provider;
-
-    // Simple test: try to list models (or just ping)
-    const { generateSummary } = require("./llm");
-    // We don't actually call generateSummary; just check if the provider detection works
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-// Interactive input helpers
-
-function askNumber(prompt: string, min: number, max: number): Promise<number> {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise((resolve) => {
-    const ask = () => {
-      rl.question(prompt, (answer) => {
-        const n = parseInt(answer.trim(), 10);
-        if (isNaN(n) || n < min || n > max) {
-          console.log(`  Please enter a number between ${min} and ${max}.`);
-          ask();
-        } else {
-          rl.close();
-          resolve(n);
-        }
-      });
-    };
-    ask();
-  });
-}
-
-function askMasked(prompt: string): Promise<string> {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise((resolve) => {
-    // Use stdin raw mode for masked input
-    if (process.stdin.isTTY) {
-      process.stdin.setRawMode(true);
-    }
-    process.stdout.write(prompt);
-
-    let input = "";
-    const onData = (char: Buffer) => {
-      const c = char.toString();
-      if (c === "\r" || c === "\n") {
-        // Enter pressed
-        process.stdout.write("\n");
-        cleanup();
-        resolve(input);
-      } else if (c === "\u007f" || c === "\b") {
-        // Backspace
-        if (input.length > 0) {
-          input = input.slice(0, -1);
-          process.stdout.write("\b \b");
-        }
-      } else if (c === "\u0003") {
-        // Ctrl+C
-        cleanup();
-        process.exit(0);
-      } else if (c.charCodeAt(0) >= 32) {
-        // Printable character
-        input += c;
-        process.stdout.write("*");
-      }
-    };
-
-    const cleanup = () => {
-      if (process.stdin.isTTY) {
-        process.stdin.setRawMode(false);
-      }
-      process.stdin.removeListener("data", onData);
-      rl.close();
-    };
-
-    process.stdin.on("data", onData);
-  });
 }

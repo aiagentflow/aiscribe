@@ -36,12 +36,17 @@ export async function log(args: string[]): Promise<void> {
 
     const [diff, branch] = await Promise.all([getDiff(), getBranchName()]);
 
-    if (!diff.diff.trim()) {
+    // If no diff but we have --with-context, continue to capture context
+    const hasGitDiff = diff.diff.trim().length > 0;
+
+    if (!hasGitDiff && !withContext) {
       if (isJson) {
         jsonSuccess(cmdName, { branch, files: 0, message: "Working tree clean" });
       } else if (!isQuiet) {
         console.log(boxBot());
         console.log(green("\n  Nothing to record. Working tree is clean.\n"));
+        console.log(gray("  Tip: Use -c flag to capture AI tool context without code changes."));
+        console.log(gray("  Example: aiscribe log -c\n"));
       }
       return;
     }
@@ -91,6 +96,17 @@ export async function log(args: string[]): Promise<void> {
 
     const userPrompt = buildUserPrompt(branch, diff.files, diff.stats, diff.diff);
     const fullUserPrompt = contextSection ? userPrompt + "\n" + contextSection : userPrompt;
+
+    // Allow context-only sessions (no git diff but AI prompts captured)
+    const hasContent = diff.diff.trim() || contextSection;
+    if (!hasContent) {
+      if (spinner) spinner.stop("Nothing to record");
+      if (!isQuiet && !isJson) {
+        console.log(gray("\n  No changes and no AI context to record.\n"));
+      }
+      return;
+    }
+
     const summary = await generateSummary(SYSTEM_PROMPT, fullUserPrompt);
 
     if (spinner) spinner.stop("Summary generated");
