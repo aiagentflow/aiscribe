@@ -1,10 +1,10 @@
 ---
 id: TASK-11
 title: 'CLI: improved help system with examples per command'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-08 12:58'
-updated_date: '2026-08-08 12:58'
+updated_date: '2026-08-08 12:59'
 labels: []
 dependencies: []
 ordinal: 11000

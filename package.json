@@ -1,6 +1,6 @@
 {
   "name": "aiscribe",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "Your AI's scribe. Every session, recorded. One command journals your AI coding session into a structured, searchable log.",
   "main": "dist/index.js",
   "bin": {

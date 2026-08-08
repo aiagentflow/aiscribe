@@ -5,88 +5,148 @@ import { saveSession } from "../storage";
 import { captureContext, formatContextForPrompt } from "../context/capture";
 import {
   bold, dim, green, cyan, yellow, gray, red,
-  statsBar, createSpinner, boxTop, boxLine, boxMid, boxBot,
+  createSpinner, boxTop, boxLine, boxMid, boxBot,
 } from "../terminal";
+import { jsonSuccess, jsonError } from "../json-output";
+
+interface LogResult {
+  branch: string;
+  files: number;
+  insertions: number;
+  deletions: number;
+  sessions: number;
+  prompts: number;
+  tool: string | null;
+  file: string;
+  summary: string;
+}
 
 export async function log(args: string[]): Promise<void> {
   const withContext = args.includes("--with-context") || args.includes("-c");
-
-  // 1. Get git info
-  console.log("");
-  console.log(boxTop("git diff"));
-  const [diff, branch] = await Promise.all([getDiff(), getBranchName()]);
-
-  if (!diff.diff.trim()) {
-    console.log(boxBot());
-    console.log(green("\n  Nothing to record. Working tree is clean.\n"));
-    return;
-  }
-
-  console.log(boxLine("Branch", branch));
-  console.log(boxLine("Files", String(diff.stats.filesChanged)));
-  console.log(
-    boxLine(
-      "Changes",
-      green("+" + diff.stats.insertions) + " " + red("-" + diff.stats.deletions)
-    )
-  );
-
-  // 2. Capture AI tool context if requested
-  let contextSection = "";
-  if (withContext) {
-    console.log(boxMid("context"));
-    const cwd = process.cwd();
-    const context = await captureContext(cwd);
-
-    if (context.tool) {
-      console.log(boxLine("Tool", context.tool));
-      console.log(boxLine("Sessions", String(context.sessionCount)));
-      console.log(boxLine("Prompts", String(context.prompts.length)));
-      contextSection = formatContextForPrompt(context);
-    } else {
-      console.log(boxLine("Tool", gray("none detected")));
-    }
-  }
-
-  console.log(boxBot());
-
-  // 3. Generate summary via LLM
-  const spinner = createSpinner("Generating session summary via LLM...");
-  spinner.start();
+  const isJson = args.includes("--json");
+  const isQuiet = args.includes("--quiet") || args.includes("-q");
+  const cmdName = "log";
 
   try {
+    // 1. Get git info
+    if (!isQuiet && !isJson) {
+      console.log("");
+      console.log(boxTop("git diff"));
+    }
+
+    const [diff, branch] = await Promise.all([getDiff(), getBranchName()]);
+
+    if (!diff.diff.trim()) {
+      if (isJson) {
+        jsonSuccess(cmdName, { branch, files: 0, message: "Working tree clean" });
+      } else if (!isQuiet) {
+        console.log(boxBot());
+        console.log(green("\n  Nothing to record. Working tree is clean.\n"));
+      }
+      return;
+    }
+
+    if (!isQuiet && !isJson) {
+      console.log(boxLine("Branch", branch));
+      console.log(boxLine("Files", String(diff.stats.filesChanged)));
+      console.log(
+        boxLine(
+          "Changes",
+          green("+" + diff.stats.insertions) + " " + red("-" + diff.stats.deletions)
+        )
+      );
+    }
+
+    // 2. Capture AI tool context
+    let contextSection = "";
+    let contextTool: string | null = null;
+    let contextSessionCount = 0;
+    let contextPromptCount = 0;
+
+    if (withContext) {
+      if (!isQuiet && !isJson) console.log(boxMid("context"));
+      const cwd = process.cwd();
+      const context = await captureContext(cwd);
+
+      contextTool = context.tool;
+      contextSessionCount = context.sessionCount;
+      contextPromptCount = context.prompts.length;
+      contextSection = formatContextForPrompt(context);
+
+      if (!isQuiet && !isJson) {
+        console.log(boxLine("Tool", contextTool || gray("none detected")));
+        console.log(boxLine("Sessions", String(contextSessionCount)));
+        console.log(boxLine("Prompts", String(contextPromptCount)));
+      }
+    }
+
+    if (!isQuiet && !isJson) console.log(boxBot());
+
+    // 3. Generate summary
+    let spinner: ReturnType<typeof createSpinner> | null = null;
+    if (!isQuiet && !isJson) {
+      spinner = createSpinner("Generating session summary...");
+      spinner.start();
+    }
+
     const userPrompt = buildUserPrompt(branch, diff.files, diff.stats, diff.diff);
     const fullUserPrompt = contextSection ? userPrompt + "\n" + contextSection : userPrompt;
     const summary = await generateSummary(SYSTEM_PROMPT, fullUserPrompt);
-    spinner.stop("Summary generated");
 
-    // 4. Generate embedding (optional, non-blocking)
-    let embedding = null;
+    if (spinner) spinner.stop("Summary generated");
+
+    // 4. Generate embedding
+    let hasEmbedding = false;
     try {
       const { generateEmbedding } = await import("../embeddings");
-      embedding = await generateEmbedding(summary);
-    } catch {
-      // Embeddings are optional
+      const emb = await generateEmbedding(summary);
+      hasEmbedding = !!emb;
+    } catch {}
+
+    // 5. Save
+    const filepath = saveSession(
+      branch,
+      summary,
+      diff.stats,
+      { tool: contextTool },
+      hasEmbedding ? { vector: [], model: "", generated: "" } : null
+    );
+
+    // 6. Output
+    if (isJson) {
+      jsonSuccess(cmdName, {
+        branch,
+        files: diff.stats.filesChanged,
+        insertions: diff.stats.insertions,
+        deletions: diff.stats.deletions,
+        sessions: contextSessionCount,
+        prompts: contextPromptCount,
+        tool: contextTool,
+        file: filepath,
+        summary: summary.slice(0, 500),
+        hasEmbedding,
+      } as LogResult);
+    } else if (!isQuiet) {
+      console.log("");
+      console.log(green("  Session recorded!"));
+      console.log(dim("  " + filepath));
+      console.log("");
+      console.log(dim("  View: ") + "cat " + filepath);
+      console.log(dim("  Web:  ") + "aiscribe server");
+      console.log("");
+    } else {
+      // Quiet mode: just print the file path
+      console.log(filepath);
     }
-
-    // 5. Save to disk
-    const filepath = saveSession(branch, summary, diff.stats, {
-      tool: withContext ? (await captureContext(process.cwd())).tool : null,
-    }, embedding);
-
-    console.log("");
-    console.log(green("  Session recorded!"));
-    console.log(dim("  " + filepath));
-    console.log("");
-    console.log(dim("  View: ") + "cat " + filepath);
-    console.log(dim("  Web:  ") + "aiscribe server");
-    console.log("");
   } catch (err: any) {
-    spinner.fail("Summary failed");
-    console.log(red("  " + err.message));
-    console.log("");
-    console.log(dim("  Tip: Run") + " aiscribe setup --reconfigure " + dim("to change provider or key."));
-    console.log("");
+    if (isJson) {
+      jsonError(cmdName, err.message);
+    } else {
+      if (!isQuiet) {
+        console.log(red("  Failed: " + err.message));
+        console.log(dim("\n  Tip: Run") + " aiscribe setup --reconfigure " + dim("to change provider."));
+      }
+    }
     process.exit(1);
   }
 }

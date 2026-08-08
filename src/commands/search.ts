@@ -1,11 +1,15 @@
 import { loadIndex } from "../storage";
 import { generateEmbedding, semanticSearch } from "../embeddings";
 import { bold, dim, green, yellow, gray, cyan } from "../terminal";
+import { jsonSuccess, jsonError } from "../json-output";
 import * as fs from "fs";
 import * as path from "path";
 
 export async function search(args: string[]): Promise<void> {
-  const query = args.join(" ").trim();
+  const isJson = args.includes("--json");
+  const isQuiet = args.includes("--quiet") || args.includes("-q");
+  const query = args.filter(a => !a.startsWith("-")).join(" ").trim();
+  const cmdName = "search";
 
   if (!query) {
     console.log(`
@@ -121,6 +125,16 @@ Examples:
     }
 
     // Display results
+    if (isJson) {
+      jsonSuccess(cmdName, { query, results, method: hasEmbeddings ? "semantic" : "keyword" });
+      return;
+    }
+
+    if (isQuiet) {
+      for (const r of results) console.log(r.id + " " + r.branch);
+      return;
+    }
+
     if (results.length === 0) {
       console.log(gray("\n  No matching sessions found.\n"));
       return;
@@ -144,8 +158,12 @@ Examples:
       console.log("");
     }
   } catch (err: any) {
-    spinner.fail("Search failed");
-    console.log(gray("  " + err.message));
-    console.log("");
-  }
+    if (isJson) {
+      jsonError(cmdName, err.message);
+    } else {
+      spinner.fail("Search failed");
+      console.log(gray("  " + err.message));
+    }
+    process.exit(1);
+}
 }
