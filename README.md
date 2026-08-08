@@ -28,14 +28,14 @@ Part of the [aiagentflow](https://aiagentflow.dev) suite.
 ## Quick Start
 
 ```bash
-npm install -g aiscribe
+npm install -g aiscribe@1.0.0
 
-# First run: interactive onboarding (pick provider, paste key)
+# First run: pick your LLM provider and paste API key
 cd /your/project
 aiscribe log
 
-# Or with AI tool context capture
-aiscribe log -c
+# With conversation capture (pi, Claude Code, Codex, Aider)
+aiscribe log -c -n "my-feature"
 ```
 
 On first run, AIScribe asks you to select an LLM provider and enter your API key. Config is saved to `~/.aiscribe/config.json` and never asked again.
@@ -72,10 +72,19 @@ Implemented Stripe refund processing with webhook support...
 | Command | What It Does |
 |---------|-------------|
 | `aiscribe log` | Journal current git diff as a session |
-| `aiscribe log -c` | Also capture AI tool prompt history |
-| `aiscribe server` | Start the session book web UI (`localhost:3848`) |
-| `aiscribe setup` | Generate Docker + database files |
-| `aiscribe setup --reconfigure` | Change LLM provider or API key |
+| `aiscribe log -c` | Include AI tool conversation context |
+| `aiscribe log -n "name"` | Custom session name |
+| `aiscribe search "query"` | Semantic or keyword search |
+| `aiscribe hotspots` | Files that change most often |
+| `aiscribe history <file>` | Timeline for a file |
+| `aiscribe context` | Export history for AI agents |
+| `aiscribe status` | Active AI coding sessions |
+| `aiscribe watch` | Auto-detect session completion |
+| `aiscribe export --format json` | Export sessions |
+| `aiscribe sync` | Push to server/DB |
+| `aiscribe server` | Start web UI on `localhost:3848` |
+| `aiscribe doctor` | Validate your setup |
+| `aiscribe setup` | Docker files or reconfigure provider |
 
 ## Providers
 

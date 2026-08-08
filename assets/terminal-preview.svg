@@ -1,7 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 80" fill="none">
-  <rect width="600" height="80" rx="8" fill="#0d1117"/>
-  <text x="16" y="20" font-family="monospace" font-size="11" fill="#8b949e">$ aiscribe log</text>
-  <text x="16" y="38" font-family="monospace" font-size="11" fill="#58a6ff">  Scanning git diff...</text>
-  <text x="16" y="54" font-family="monospace" font-size="11" fill="#3fb950">  ✓ Session recorded: 2026-08-08-stripe-refunds.md</text>
-  <text x="16" y="70" font-family="monospace" font-size="11" fill="#8b949e">  47 files | +892 / -156 | 6 prompts | 3 chunks</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 100" fill="none">
+  <rect width="600" height="100" rx="8" fill="#0d1117"/>
+  <text x="16" y="22" font-family="monospace" font-size="11" fill="#8b949e">$ aiscribe log -c -n "stripe-refunds"</text>
+  <text x="16" y="40" font-family="monospace" font-size="11" fill="#58a6ff">  Tool: pi</text>
+  <text x="16" y="56" font-family="monospace" font-size="11" fill="#3fb950">  Prompts: 24 | Files: 47 | Changes: +892/-156</text>
+  <text x="16" y="72" font-family="monospace" font-size="11" fill="#3fb950">  Session recorded!</text>
+  <text x="16" y="88" font-family="monospace" font-size="11" fill="#8b949e">  .aiscribe/sessions/2026-08-08-2354-stripe-refunds.md</text>
 </svg>
