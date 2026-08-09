@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AIScribe - Your AI's scribe. Every session, recorded.</title>
-<meta name="description" content="Never lose context across AI coding sessions. One command journals your AI session into a structured, searchable log. Works with Claude Code, Cursor, Codex, or any AI tool.">
+<title>AIScribe - Your AI's scribe. Every session, recorded, backed up.</title>
+<meta name="description" content="Never lose context across AI coding sessions. One command journals your AI session into a structured, searchable log and auto-pushes to a private GitHub repo. Works with pi, Claude Code, Cursor, Codex, or any AI tool.">
 <meta property="og:title" content="AIScribe - Your AI's scribe">
-<meta property="og:description" content="One command after every AI coding session. Never lose context again.">
+<meta property="og:description" content="One command after every AI coding session. Saved locally, backed up to GitHub, searchable forever.">
 <meta property="og:type" content="website">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -73,11 +73,11 @@ h3{font-size:1.2rem;font-weight:600;color:#f0f6fc;margin-bottom:0.5rem}
       <line x1="44" y1="104" x2="52" y2="114" stroke="#3fb950" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
       <text x="95" y="60" font-family="system-ui,sans-serif" font-weight="700" font-size="34" fill="#f0f6fc">AIScribe</text>
       <text x="95" y="86" font-family="system-ui,sans-serif" font-weight="400" font-size="15" fill="#8b949e">Your AI's scribe</text>
-      <text x="95" y="106" font-family="system-ui,sans-serif" font-weight="400" font-size="15" fill="#8b949e">Every session, recorded.</text>
+      <text x="95" y="106" font-family="system-ui,sans-serif" font-weight="400" font-size="15" fill="#8b949e">Every session, recorded, backed up.</text>
       <circle cx="88" cy="46" r="3" fill="#3fb950"/>
     </svg>
-    <h1>Your AI writes code.<br>AIScribe remembers why.</h1>
-    <p class="hero-sub">One command after every AI coding session. Never lose context again. Works with Claude Code, Cursor, Codex, or any AI tool.</p>
+    <h1>Your AI writes code.<br>AIScribe remembers why — and keeps it safe.</h1>
+    <p class="hero-sub">One command after every AI coding session. Saved locally, backed up to a private GitHub repo, searchable forever. Works with pi, Claude Code, Cursor, Codex, or any AI tool.</p>
     <div class="install-cmd">npm install -g aiscribe</div>
     <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap">
       <a href="https://github.com/aiagentflow/aiscribe" class="btn btn-primary" target="_blank">
@@ -112,32 +112,41 @@ h3{font-size:1.2rem;font-weight:600;color:#f0f6fc;margin-bottom:0.5rem}
       <div class="step">
         <div class="step-num">3</div>
         <div>
+          <h3>Auto-backed up to GitHub</h3>
+          <p style="color:#8b949e">Every session auto-committed to your private repo. Organized by project. Full git history — browse, diff, revert any session.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div>
           <h3>Browse, search, never lose context</h3>
-          <p style="color:#8b949e">Web UI at <code style="color:#58a6ff">localhost:3848</code>. Search by meaning. Hotspot detection. Timeline view.</p>
+          <p style="color:#8b949e">Web UI at <code style="color:#58a6ff">localhost:3848</code>. Search by meaning. Hotspot detection. Timeline view. Export for AI training.</p>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- Terminal Demo -->
+<!-- Terminal Demos -->
 <section>
   <div class="container">
-    <h2>Terminal Demo</h2>
-    <div class="code" style="margin-top:1.5rem">
-      <span class="dim">$</span> <span class="green">aiscribe log -c</span><br><br>
-      <span class="dim">git diff</span><br>
-      <span class="dim">  Branch:</span> stripe-refunds<br>
-      <span class="dim">  Files:</span> 47<br>
-      <span class="dim">  Changes:</span> <span class="green">+892</span> <span style="color:#f85149">-156</span><br><br>
-      <span class="dim">context</span><br>
-      <span class="dim">  Tool:</span> claude-code<br>
-      <span class="dim">  Sessions:</span> 2<br>
-      <span class="dim">  Prompts:</span> 6<br><br>
-      <span class="green">Session recorded!</span><br>
-      <span class="dim">  .aiscribe/sessions/2026-08-08-stripe-refunds.md</span><br><br>
-      <span class="dim">  View:</span> cat .aiscribe/sessions/2026-08-08-stripe-refunds.md<br>
-      <span class="dim">  Web:</span> aiscribe server
+    <h2>See It in Action</h2>
+    <div class="grid grid-3" style="margin-top:1.5rem">
+      <div class="card" style="text-align:center">
+        <h3 style="justify-content:center">aiscribe log</h3>
+        <p>Journal a session</p>
+        <img src="assets/demos/demo-log.gif" alt="aiscribe log demo" style="width:100%;border-radius:8px;margin-top:0.5rem">
+      </div>
+      <div class="card" style="text-align:center">
+        <h3 style="justify-content:center">aiscribe search</h3>
+        <p>Find by meaning</p>
+        <img src="assets/demos/demo-search.gif" alt="aiscribe search demo" style="width:100%;border-radius:8px;margin-top:0.5rem">
+      </div>
+      <div class="card" style="text-align:center">
+        <h3 style="justify-content:center">aiscribe hotspots</h3>
+        <p>Codebase analytics</p>
+        <img src="assets/demos/demo-analytics.gif" alt="aiscribe hotspots demo" style="width:100%;border-radius:8px;margin-top:0.5rem">
+      </div>
     </div>
   </div>
 </section>
@@ -171,6 +180,14 @@ h3{font-size:1.2rem;font-weight:600;color:#f0f6fc;margin-bottom:0.5rem}
         <h3>Web UI</h3>
         <p>Dark-themed session book. Browse, search, sort, and read every session like a journal.</p>
       </div>
+      <div class="card">
+        <h3>Git Backup</h3>
+        <p>Every session auto-pushed to your private GitHub repo. Full git history of every AI decision. Browse, diff, revert.</p>
+      </div>
+      <div class="card">
+        <h3>AI Training Data</h3>
+        <p>Export all your sessions as training data. Fine-tune local LLMs on your real coding patterns and decisions.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -189,9 +206,46 @@ h3{font-size:1.2rem;font-weight:600;color:#f0f6fc;margin-bottom:0.5rem}
         <tr><td>aiscribe hotspots</td><td>Files that change most often</td></tr>
         <tr><td>aiscribe history</td><td>Timeline of changes for a file</td></tr>
         <tr><td>aiscribe server</td><td>Start web UI on localhost:3848</td></tr>
+        <tr><td>aiscribe remote set &lt;url&gt;</td><td>Auto-push sessions to private GitHub repo</td></tr>
+        <tr><td>aiscribe export</td><td>Export sessions for AI training</td></tr>
         <tr><td>aiscribe doctor</td><td>Validate your setup (7 checks)</td></tr>
         <tr><td>aiscribe setup</td><td>Configure provider or generate Docker files</td></tr>
       </table>
+    </div>
+  </div>
+</section>
+
+<!-- Git Backup -->
+<section>
+  <div class="container">
+    <h2>Your AI Journal, on GitHub</h2>
+    <p style="color:#8b949e;margin-top:0.5rem;max-width:600px">One command to configure. Every session auto-committed. Full git history of every AI decision you've ever made — across all your projects.</p>
+    <div class="code" style="margin-top:1.5rem">
+      <span class="dim">$</span> <span class="green">aiscribe remote set git@github.com:you/ai-sessions.git</span><br>
+      <span class="dim">  Remote configured: git@github.com:you/ai-sessions.git</span><br>
+      <span class="dim">  Repository ready.</span><br><br>
+      <span class="dim">$</span> <span class="green">aiscribe log</span><br>
+      <span class="dim">  ...summarizing...</span><br>
+      <span class="green">  Session recorded!</span><br>
+      <span class="green">  Pushed to git@github.com:you/ai-sessions.git</span><br>
+    </div>
+    <div class="grid grid-2" style="margin-top:2rem">
+      <div class="card">
+        <h3>Set Once, Works Everywhere</h3>
+        <p>Configure one remote repo. Every project's sessions auto-sync there, organized by project name. Zero config per project.</p>
+      </div>
+      <div class="card">
+        <h3>Full Git History</h3>
+        <p>Every session is a commit. Browse the timeline, diff between sessions, revert to any point. Your AI's entire decision history in git.</p>
+      </div>
+      <div class="card">
+        <h3>Cross-Project View</h3>
+        <p>All your projects in one repo: <code style="color:#58a6ff">stripe-refunds/</code>, <code style="color:#58a6ff">auth-service/</code>, <code style="color:#58a6ff">frontend/</code>. See your AI usage patterns across everything you build.</p>
+      </div>
+      <div class="card">
+        <h3>Private & Portable</h3>
+        <p>It's your repo. Nothing leaves your GitHub account. Clone it anywhere to get your full AI context on any machine.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -226,8 +280,8 @@ h3{font-size:1.2rem;font-weight:600;color:#f0f6fc;margin-bottom:0.5rem}
 <!-- CTA -->
 <section style="text-align:center">
   <div class="container">
-    <h2>Stop losing context.</h2>
-    <p style="color:#8b949e;font-size:1.1rem;margin-bottom:2rem">Your AI writes code. AIScribe remembers why.<br>One command. Every session. Forever.</p>
+    <h2>Stop losing context. Keep it forever.</h2>
+    <p style="color:#8b949e;font-size:1.1rem;margin-bottom:2rem">Your AI writes code. AIScribe remembers why — and backs it all up.<br>One command. Every session. Local + GitHub. Forever.</p>
     <div class="install-cmd">npm install -g aiscribe</div>
     <div style="margin-top:1rem">
       <a href="https://github.com/aiagentflow/aiscribe" style="color:#8b949e;font-size:0.9rem;text-decoration:none">View on GitHub →</a>

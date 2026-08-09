@@ -40,6 +40,23 @@ aiscribe log -c -n "my-feature"
 
 On first run, AIScribe asks you to select an LLM provider and enter your API key. Config is saved to `~/.aiscribe/config.json` and never asked again.
 
+## Demos
+
+<p align="center">
+  <strong>aiscribe log</strong> — Journal a session<br>
+  <img src="assets/demos/demo-log.gif" alt="aiscribe log demo" width="600">
+</p>
+
+<p align="center">
+  <strong>aiscribe search</strong> — Find sessions by meaning<br>
+  <img src="assets/demos/demo-search.gif" alt="aiscribe search demo" width="600">
+</p>
+
+<p align="center">
+  <strong>aiscribe hotspots + history</strong> — Codebase analytics<br>
+  <img src="assets/demos/demo-analytics.gif" alt="aiscribe hotspots demo" width="600">
+</p>
+
 ## What You Get
 
 ```
@@ -134,7 +151,7 @@ aiscribe setup
 cd .aiscribe && docker-compose up -d
 ```
 
-Spins up PostgreSQL + pgvector for future semantic search features.
+Spins up PostgreSQL + pgvector for semantic search and session persistence.
 
 ## How It Works
 
@@ -157,15 +174,20 @@ After 2 weeks of AI coding sessions, you have no memory of what changed or why. 
 ## Roadmap
 
 - [x] Git diff summarization
-- [x] AI tool context capture (Claude Code, Codex, Aider)
+- [x] AI tool context capture (Claude Code, Codex, Aider, pi)
 - [x] Interactive onboarding
 - [x] Web UI (session book)
 - [x] Multi-provider LLM support
 - [x] Docker + PostgreSQL setup
-- [ ] Terminal UX with colors
-- [ ] Vector embeddings + semantic search
-- [ ] Pattern matching across sessions
-- [ ] Team sharing
+- [x] Terminal UX with colors
+- [x] Vector embeddings + semantic search
+- [x] Pattern matching across sessions (hotspots, history)
+- [x] Git remote backup (auto-push to private repo)
+- [x] Session watch (auto-detect AI sessions)
+- [x] AI agent context export (llms.txt, context command)
+- [x] JSON and machine-readable export
+- [ ] Paid plan integration (Stripe, Pro/Team)
+- [ ] Team sharing & workspaces
 
 ## License
 

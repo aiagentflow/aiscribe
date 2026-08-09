@@ -213,7 +213,7 @@ function showLogHelp() {
 
   ${bold("Flags:")}
     -c, --with-context    Capture AI tool prompt history
-    --json                Output as JSON (not yet implemented)
+    --json                Output as JSON
     -h, --help            Show this help
 
   ${bold("What it does:")}
