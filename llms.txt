@@ -1,6 +1,6 @@
 # AIScribe
 
-AIScribe is a CLI tool that journals AI coding sessions into structured, searchable logs. It works with any AI coding tool (Claude Code, Cursor, Codex, etc.) by reading git diffs and AI tool history files.
+AIScribe is a CLI tool that journals AI coding sessions into structured, searchable logs, with optional auto-backup to a private GitHub repo. It works with any AI coding tool (pi, Claude Code, Cursor, Codex, etc.) by reading git diffs and AI tool history files.
 
 ## Quick Start
 
@@ -33,6 +33,7 @@ aiscribe watch
 | `aiscribe context --format plain` | Get recent session history for AI context window |
 | `aiscribe search "query"` | Find past sessions by meaning |
 | `aiscribe sync` | Push local sessions to server/DB |
+| `aiscribe remote set <url>` | Auto-push sessions to private GitHub repo |
 | `aiscribe status` | Check active AI sessions |
 
 ## For AI Agents
@@ -45,8 +46,9 @@ When you are an AI agent working on this project:
 
 ## Configuration
 
-- Config file: `~/.aiscribe/config.json`
+- Config file: `~/.aiscribe/config.json` (provider, API key, remote URL)
 - Session storage: `.aiscribe/sessions/` (markdown files)
+- Git backup: `~/.aiscribe/remote/` (clone of private backup repo)
 - Index: `.aiscribe/index.json`
 
 ## More Info

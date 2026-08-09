@@ -3,6 +3,7 @@ import { generateSummary } from "../llm";
 import { SYSTEM_PROMPT, buildUserPrompt } from "../prompt";
 import { saveSession } from "../storage";
 import { captureContext, formatContextForPrompt } from "../context/capture";
+import { writeContextFile } from "./context";
 import * as path from "path";
 import {
   bold, dim, green, cyan, yellow, gray, red,
@@ -143,7 +144,10 @@ export async function log(args: string[]): Promise<void> {
       hasEmbedding ? { vector: [], model: "", generated: "" } : null
     );
 
-    // 6. Try to POST to server if running (Docker DB integration)
+    // 6. Auto-generate context file for AI agents
+    try { writeContextFile(); } catch {}
+
+    // 7. Try to POST to server if running (Docker DB integration)
     try {
       const serverUrl = process.env.AISCRIBE_SERVER || "http://localhost:3848";
       const healthRes = await fetch(`${serverUrl}/api/health`);
@@ -167,7 +171,7 @@ export async function log(args: string[]): Promise<void> {
       // Server not running, that's fine
     }
 
-    // 7. Output
+    // 8. Output
     if (isJson) {
       jsonSuccess(cmdName, {
         branch,

@@ -98,6 +98,42 @@ PORT=4000 aiscribe server    # Custom port
 
 ---
 
+### `aiscribe remote`
+
+Configure git remote backup. Every `aiscribe log` auto-pushes sessions to your private repo.
+
+```bash
+aiscribe remote                    # Show current remote status
+aiscribe remote set <git-url>      # Configure backup repo
+aiscribe remote disable            # Turn off automatic backup
+```
+
+**What it does:**
+1. Clones your private repo to `~/.aiscribe/remote/`
+2. On every `aiscribe log`, copies the session file + index into the repo
+3. Commits and pushes automatically, organized by project name
+4. Tracks errors and pauses if too many failures
+
+**Example:**
+```bash
+aiscribe remote set git@github.com:you/ai-sessions.git
+# Now every aiscribe log auto-pushes
+```
+
+**Backup repo structure:**
+```
+ai-sessions/
+├── my-project/
+│   ├── 2026-08-08-stripe-refunds.md
+│   └── index.json
+├── other-project/
+│   ├── 2026-08-09-auth-fix.md
+│   └── index.json
+└── ...
+```
+
+---
+
 ### `aiscribe doctor`
 
 Validate your setup. Checks 7 things:
@@ -151,6 +187,7 @@ To change later: `aiscribe setup --reconfigure`
 | `AISCRIBE_BASE_URL` | Custom endpoint URL | `https://your-api.com/v1` |
 | `OLLAMA_HOST` | Ollama server | `http://localhost:11434` |
 | `PORT` | Server port | `3848` |
+| `AISCRIBE_SERVER` | Sync target server | `http://localhost:3848` |
 
 ### Config File
 
@@ -159,7 +196,11 @@ To change later: `aiscribe setup --reconfigure`
 {
   "provider": "openrouter",
   "apiKey": "sk-or-...",
-  "model": "anthropic/claude-sonnet-4"
+  "model": "anthropic/claude-sonnet-4",
+  "remoteUrl": "git@github.com:you/ai-sessions.git",
+  "remoteEnabled": true,
+  "remoteLastSync": "2026-08-08T14:32:00Z",
+  "remoteErrors": 0
 }
 ```
 
@@ -174,8 +215,10 @@ To change later: `aiscribe setup --reconfigure`
 ├── index.json          # Session index for quick lookups
 ├── docker-compose.yml  # Docker setup (generated)
 ├── init.sql            # Database schema (generated)
-└── Dockerfile          # Container config (generated)
+├── Dockerfile          # Container config (generated)
+└── sync-state.json     # Sync tracking (generated)
 
 ~/.aiscribe/
-└── config.json         # Global provider configuration
+├── config.json         # Global provider + remote configuration
+└── remote/             # Git backup repo clone
 ```

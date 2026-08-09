@@ -8,11 +8,13 @@ AIScribe is a CLI tool that journals AI coding sessions. It reads git diffs and 
 
 ## Before Starting Work
 
-Run this to understand what was recently done on this project:
+Read the auto-generated context file to understand what was recently done on this project:
 
 ```bash
-aiscribe context --format plain --last 5
+cat .aiscribe/CONTEXT.md
 ```
+
+Or for the full CLI: `aiscribe context --format plain --last 5`
 
 ## After Making Changes
 

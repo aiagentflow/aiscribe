@@ -1,7 +1,7 @@
 {
   "name": "aiscribe",
-  "version": "1.1.3",
-  "description": "Your AI's scribe. Every session, recorded. One command journals your AI coding session into a structured, searchable log.",
+  "version": "1.1.5",
+  "description": "Your AI's scribe. Every session, recorded, backed up. One command journals your AI coding session into a structured, searchable log and auto-pushes to a private GitHub repo.",
   "main": "dist/index.js",
   "bin": {
     "aiscribe": "dist/index.js"
@@ -24,9 +24,12 @@
     "git",
     "scribe",
     "memory",
+    "backup",
+    "github",
     "claude-code",
     "cursor",
-    "codex"
+    "codex",
+    "pi"
   ],
   "author": "",
   "license": "MIT",

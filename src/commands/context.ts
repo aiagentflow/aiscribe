@@ -165,6 +165,42 @@ function getFlagValue(args: string[], flag: string): number | null {
   return null;
 }
 
+/** Write .aiscribe/CONTEXT.md after each session — AI agents read this file for instant context */
+export function writeContextFile(): void {
+  const index = loadIndex();
+  if (index.sessions.length === 0) return;
+
+  const lastN = Math.min(5, index.sessions.length);
+  const recentSessions = index.sessions.slice(0, lastN);
+  const summaries = recentSessions.map((s) => readSessionSummary(s.id, s.file, s.branch, s.date));
+
+  const lines: string[] = [];
+  lines.push(`# Recent Session Context`);
+  lines.push("");
+  lines.push(`Project: ${path.basename(process.cwd())}`);
+  lines.push(`Sessions: ${summaries.length} of ${index.sessions.length} total`);
+  lines.push(`Generated: ${new Date().toISOString()}`);
+  lines.push("");
+
+  for (const s of summaries) {
+    lines.push(`## ${s.branch} (${formatDate(s.date)})`);
+    lines.push(`Files: ${s.files} | Changes: +${s.insertions}/-${s.deletions}`);
+    if (s.tool) lines.push(`Tool: ${s.tool}`);
+    lines.push("");
+    lines.push(s.summary.slice(0, 500));
+    if (s.decisions.length > 0) {
+      lines.push("");
+      lines.push("Key Decisions:");
+      s.decisions.forEach((d) => lines.push(`- ${d}`));
+    }
+    lines.push("");
+  }
+
+  const dir = path.join(process.cwd(), ".aiscribe");
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, "CONTEXT.md"), lines.join("\n"), "utf-8");
+}
+
 function formatDate(d: string): string {
   return new Date(d).toLocaleDateString("en-US", {
     month: "short",
