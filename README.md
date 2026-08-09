@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <strong>Your AI's scribe. Every session, recorded.</strong>
+  <strong>Your AI's scribe. Every session, recorded, and ready to train your own model.</strong>
 </p>
 
 <p align="center">
@@ -23,7 +23,7 @@
 
 ---
 
-**AIScribe** is a CLI tool that journals every AI coding session into a structured, searchable log. One command after every session and you never lose context again.
+**AIScribe** is a CLI tool that journals every AI coding session into a structured, searchable log. Captures git diffs and AI conversations. Exports as training data so you can fine-tune your own LLM. One command after every session and you never lose context again.
 
 Works with Claude Code, Cursor, Codex, Aider, Windsurf, or any AI coding tool — it reads your git diff.
 
@@ -62,6 +62,8 @@ On first run, AIScribe asks you to select an LLM provider and enter your API key
 </p>
 
 ## What You Get
+
+Every session is saved as a markdown file you can export as training data:
 
 ```
 .aiscribe/sessions/2026-08-08-stripe-refunds.md
