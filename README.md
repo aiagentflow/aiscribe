@@ -1,4 +1,8 @@
 <p align="center">
+  <img src="assets/icon.svg" alt="AIScribe icon" width="120">
+</p>
+
+<p align="center">
   <img src="assets/logo.svg" alt="AIScribe logo" width="400">
 </p>
 

@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#58a6ff"/>
+      <stop offset="100%" stop-color="#3fb950"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3fb950"/>
+      <stop offset="100%" stop-color="#58a6ff"/>
+    </linearGradient>
+    <linearGradient id="gbg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#161b22"/>
+      <stop offset="100%" stop-color="#0d1117"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" fill="url(#gbg)"/>
+  <rect x="12" y="12" width="488" height="488" rx="102" fill="none" stroke="url(#g)" stroke-width="6" opacity="0.4"/>
+
+  <!-- Book/Journal -->
+  <rect x="140" y="120" width="180" height="230" rx="16" fill="#0d1117" stroke="url(#g)" stroke-width="8"/>
+  <!-- Spine -->
+  <line x1="230" y1="120" x2="230" y2="350" stroke="url(#g)" stroke-width="6"/>
+  <!-- Book lines - left page -->
+  <line x1="165" y1="170" x2="210" y2="170" stroke="#8b949e" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
+  <line x1="165" y1="200" x2="210" y2="200" stroke="#8b949e" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
+  <line x1="165" y1="230" x2="210" y2="230" stroke="#8b949e" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
+  <line x1="165" y1="260" x2="190" y2="260" stroke="#8b949e" stroke-width="5" stroke-linecap="round" opacity="0.4"/>
+  <!-- Book lines - right page -->
+  <line x1="250" y1="170" x2="300" y2="170" stroke="#8b949e" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
+  <line x1="250" y1="200" x2="300" y2="200" stroke="#8b949e" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
+  <line x1="250" y1="230" x2="295" y2="230" stroke="#8b949e" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
+  <line x1="250" y1="260" x2="280" y2="260" stroke="#8b949e" stroke-width="5" stroke-linecap="round" opacity="0.4"/>
+
+  <!-- Quill pen -->
+  <path d="M200 340 L260 280 L295 245" stroke="url(#g)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M260 280 L275 295 L285 285 L270 270 Z" fill="#3fb950" opacity="0.9"/>
+  <path d="M285 285 L298 272" stroke="url(#g)" stroke-width="6" stroke-linecap="round"/>
+  <path d="M295 245 Q320 220 330 230 Q340 240 315 260" fill="url(#g2)" opacity="0.7"/>
+
+  <!-- Feather details -->
+  <path d="M200 340 Q220 310 260 280" stroke="url(#g)" stroke-width="4" stroke-linecap="round" opacity="0.5"/>
+  <path d="M210 330 Q240 300 265 285" stroke="url(#g)" stroke-width="3" stroke-linecap="round" opacity="0.4"/>
+  <path d="M220 320 Q245 295 270 290" stroke="url(#g)" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+
+  <!-- Recording indicator dot -->
+  <circle cx="370" cy="140" r="16" fill="#3fb950" opacity="0.9"/>
+  <circle cx="370" cy="140" r="10" fill="#161b22"/>
+  <circle cx="370" cy="140" r="6" fill="#3fb950"/>
+
+  <!-- Bottom small text for brand -->
+  <text x="256" y="430" font-family="system-ui,-apple-system,sans-serif" font-weight="700" font-size="42" fill="#f0f6fc" text-anchor="middle" letter-spacing="2">AISCRIBE</text>
+</svg>
