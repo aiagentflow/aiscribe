@@ -47,6 +47,48 @@ function readFileIfChanged(filepath: string): string | null {
   }
 }
 
+// Read pi agent sessions from ~/.pi/agent/sessions/
+function readPiSessions(): AgentSession[] {
+  const sessionsDir = path.join(os.homedir(), ".pi", "agent", "sessions");
+  if (!fs.existsSync(sessionsDir)) return [];
+
+  const sessions: AgentSession[] = [];
+  const projectDirs = fs.readdirSync(sessionsDir, { withFileTypes: true })
+    .filter(d => d.isDirectory());
+
+  for (const dir of projectDirs) {
+    const files = fs.readdirSync(path.join(sessionsDir, dir.name))
+      .filter(f => f.endsWith(".jsonl"))
+      .sort();
+    
+    if (files.length === 0) continue;
+    
+    const decoded = "/" + dir.name.slice(2, -2).replace(/-/g, "/");
+    
+    for (const file of files) {
+      const filepath = path.join(sessionsDir, dir.name, file);
+      try {
+        const stat = fs.statSync(filepath);
+        const firstLine = fs.readFileSync(filepath, "utf-8").split("\n")[0];
+        const entry = JSON.parse(firstLine);
+        
+        sessions.push({
+          sessionId: file.replace(".jsonl", ""),
+          tool: "pi",
+          cwd: decoded,
+          name: `pi-${decoded.split("/").pop()}`,
+          status: "running",
+          startedAt: entry.timestamp ? new Date(entry.timestamp).getTime() : stat.birthtimeMs,
+          updatedAt: stat.mtimeMs,
+          prompts: [],
+        });
+      } catch {}
+    }
+  }
+
+  return sessions;
+}
+
 // Read Claude Code sessions from ~/.claude/sessions/
 function readClaudeSessions(): AgentSession[] {
   const sessionsDir = path.join(os.homedir(), ".claude", "sessions");
@@ -60,19 +102,15 @@ function readClaudeSessions(): AgentSession[] {
       const raw = JSON.parse(
         fs.readFileSync(path.join(sessionsDir, file), "utf-8")
       );
-
-      // Skip non-project sessions
       if (!raw.cwd) continue;
 
-      // Map Claude Code status
       let status: AgentSession["status"] = "unknown";
       if (raw.status === "waiting") status = "waiting";
       else if (raw.status === "running") status = "running";
-      else if (raw.status === "complete" || raw.status === "completed")
-        status = "complete";
+      else if (raw.status === "complete" || raw.status === "completed") status = "complete";
       else if (raw.status === "failed") status = "failed";
 
-      const session: AgentSession = {
+      sessions.push({
         sessionId: raw.sessionId || file.replace(".json", ""),
         tool: "claude-code",
         cwd: raw.cwd,
@@ -81,12 +119,8 @@ function readClaudeSessions(): AgentSession[] {
         startedAt: raw.startedAt || raw.updatedAt || 0,
         updatedAt: raw.updatedAt || 0,
         prompts: [],
-      };
-
-      sessions.push(session);
-    } catch {
-      // Skip malformed files
-    }
+      });
+    } catch {}
   }
 
   return sessions;
@@ -119,27 +153,19 @@ function readClaudePrompts(cwd: string): string[] {
 // Get sessions for the current project directory
 export function getCurrentProjectSessions(): AgentSession[] {
   const cwd = process.cwd();
-  const allSessions = readClaudeSessions();
+  const allSessions = [...readClaudeSessions(), ...readPiSessions()];
 
   return allSessions
-    .filter((s) => {
-      // Match by cwd
-      return (
-        s.cwd === cwd ||
-        cwd.startsWith(s.cwd) ||
-        s.cwd.startsWith(cwd)
-      );
-    })
+    .filter((s) => s.cwd === cwd || cwd.startsWith(s.cwd) || s.cwd.startsWith(cwd))
     .map((s) => ({
       ...s,
-      prompts: readClaudePrompts(s.cwd),
+      prompts: s.tool === "claude-code" ? readClaudePrompts(s.cwd) : [],
     }))
     .sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
 // Get session status for display
 export function getSessionStatus(): SessionStatus {
-  const allSessions = readClaudeSessions();
   const projectSessions = getCurrentProjectSessions();
 
   return {
