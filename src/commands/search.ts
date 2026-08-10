@@ -24,18 +24,18 @@ Examples:
     return;
   }
 
-  console.log("");
+  if (!isJson && !isQuiet) console.log("");
   const spinner = (await import("../terminal")).createSpinner(
     `Searching sessions for "${query}"...`
   );
-  spinner.start();
+  if (!isJson && !isQuiet) spinner.start();
 
   try {
     // Load all sessions
     const index = loadIndex();
     if (index.sessions.length === 0) {
       spinner.stop("No sessions found");
-      console.log(gray("\n  Run 'aiscribe log' in your project first.\n"));
+      if (!isJson) console.log(gray("\n  Run 'aiscribe log' in your project first.\n"));
       return;
     }
 
@@ -104,7 +104,7 @@ Examples:
 
     // Fallback to keyword search if no semantic results
     if (results.length === 0) {
-      spinner.stop("Using keyword search (add API key for semantic search)");
+      if (!isJson && !isQuiet) spinner.stop("Using keyword search (add API key for semantic search)");
       const q = query.toLowerCase();
       results = index.sessions
         .filter(
@@ -121,7 +121,7 @@ Examples:
           snippet: "",
         }));
     } else {
-      spinner.stop(`Found ${results.length} related sessions`);
+      if (!isJson && !isQuiet) spinner.stop(`Found ${results.length} related sessions`);
     }
 
     // Display results

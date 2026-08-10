@@ -66,7 +66,13 @@ export function jsonSuccess(command: string, data: unknown): void {
     command,
     version: require("./version").VERSION,
   };
-  console.log(colorizeJSON(JSON.stringify(out, null, 2)));
+  const raw = JSON.stringify(out, null, 2);
+  // Only colorize when outputting to a terminal (not piped to jq/file)
+  if (process.stdout.isTTY) {
+    console.log(colorizeJSON(raw));
+  } else {
+    console.log(raw);
+  }
 }
 
 export function jsonError(command: string, error: string): void {
@@ -76,5 +82,10 @@ export function jsonError(command: string, error: string): void {
     command,
     version: require("./version").VERSION,
   };
-  console.error(colorizeJSON(JSON.stringify(out, null, 2)));
+  const raw = JSON.stringify(out, null, 2);
+  if (process.stderr.isTTY) {
+    console.error(colorizeJSON(raw));
+  } else {
+    console.error(raw);
+  }
 }
