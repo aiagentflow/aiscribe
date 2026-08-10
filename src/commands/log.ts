@@ -84,12 +84,18 @@ export async function log(args: string[]): Promise<void> {
     // Date range for context capture
     const sinceArg = getFlagValue(args, "--since");
     let sinceDate: Date | null = null;
+    let batchMode: string = "exchange"; // exchange | lines | none
+    let batchLines: number = 800;
+
     if (sinceArg) {
       sinceDate = parseDateRange(sinceArg);
     } else if (withContext && !isQuiet && !isJson && process.stdin.isTTY) {
-      sinceDate = await askDateRange();
+      const result = await askDateRange();
+      sinceDate = result.date;
+      batchMode = result.batchMode;
+      batchLines = result.batchLines;
     } else {
-      sinceDate = parseDateRange("today"); // Default: today only
+      sinceDate = parseDateRange("today");
     }
 
     if (withContext) {
@@ -155,17 +161,16 @@ export async function log(args: string[]): Promise<void> {
       ? buildFullSummary(branch, diff, contextSection)
       : await generateSummary(SYSTEM_PROMPT, fullUserPrompt);
 
-    // Append raw conversation log to the summary
+    // Append raw conversation log
     let fullSummary = summary;
     if (contextSection) {
       fullSummary += "\n\n## Conversation Log\n\n";
       fullSummary += contextSection;
     }
 
-    // Append full transcript as clean chat conversation
+    // Append file/command metadata from full transcript
     if (fullTranscript && fullTranscript.messages.length > 0) {
       fullSummary += "\n\n## Session Conversation\n\n";
-
       if (fullTranscript.filesRead.length > 0) {
         fullSummary += "**Files read:** ";
         fullSummary += fullTranscript.filesRead.map(f => "`" + f.replace(process.cwd(), "") + "`").join(", ");
@@ -176,41 +181,56 @@ export async function log(args: string[]): Promise<void> {
         fullSummary += fullTranscript.commandsRun.map(c => "`" + c.slice(0, 80) + "`").join(", ");
         fullSummary += "\n\n";
       }
-
       fullSummary += "---\n\n";
-      for (const msg of fullTranscript.messages) {
-        const time = new Date(msg.timestamp).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
-        if (msg.role === "user") {
-          fullSummary += `<div class="chat-user">\n\n**You** _${time}_\n\n${msg.content.slice(0, 800)}\n\n</div>\n\n`;
-        } else if (msg.role === "assistant") {
-          fullSummary += `<div class="chat-assistant">\n\n**AiScribe** _${time}_\n\n${msg.content.slice(0, 800)}\n\n</div>\n\n`;
-        } else {
-          fullSummary += `<div class="chat-tool">\n\n_${msg.toolName || "tool"}_ _${time}_\n\n\`\`\`\n${msg.content.slice(0, 500)}\n\`\`\`\n\n</div>\n\n`;
-        }
-      }
     }
+
+    // Remove old inline chat formatting - now handled by batching below
+    let baseSummary = fullSummary; // Summary without individual messages
 
     if (spinner) spinner.stop(effectiveFull ? "Session captured" : "Summary generated");
 
-    // 4. Smart batching: split large conversations into manageable files
-    const MAX_LINES = 800; // Standard readable markdown file limit
+    // 4. Smart batching
     const fullLines = fullSummary.split("\n");
     const batches: string[] = [];
 
-    if (fullLines.length <= MAX_LINES) {
+    if (batchMode === "exchange" && fullTranscript && fullTranscript.messages.length > 0) {
+      // Batch by conversation exchange: one user prompt + all responses = one batch
+      let currentBatch = baseSummary; // Summary + files read + commands run
+      let exchangeCount = 0;
+      for (const msg of fullTranscript.messages) {
+        const isNewExchange = msg.role === "user";
+        if (isNewExchange && currentBatch.split("\n").length > 100) {
+          // Save previous batch, start new one
+          if (exchangeCount > 0) {
+            const header = `# ${sessionName || branch} (Exchange ${exchangeCount + 1})\n\n` +
+              `**Date:** ${new Date().toISOString()}\n**Branch:** ${branch}\n\n---\n\n`;
+            batches.push(currentBatch);
+            currentBatch = header;
+          }
+          exchangeCount++;
+        }
+        const time = new Date(msg.timestamp).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+        if (msg.role === "user") {
+          currentBatch += `<div class="chat-user">\n\n**You** _${time}_\n\n${detectAndFormatCode(msg.content.slice(0, 2000))}\n\n</div>\n\n`;
+        } else if (msg.role === "assistant") {
+          currentBatch += `<div class="chat-assistant">\n\n**AiScribe** _${time}_\n\n${detectAndFormatCode(msg.content.slice(0, 2000))}\n\n</div>\n\n`;
+        } else {
+          currentBatch += `<div class="chat-tool">\n\n_${msg.toolName || "tool"}_ _${time}_\n\n\`\`\`\n${msg.content.slice(0, 1000)}\n\`\`\`\n\n</div>\n\n`;
+        }
+      }
+      batches.push(currentBatch);
+    } else if (fullLines.length <= batchLines) {
       batches.push(fullSummary);
     } else {
-      // Batch by time chunks if we have timestamps, otherwise by line count
-      const batchCount = Math.ceil(fullLines.length / MAX_LINES);
+      // Line-based batching
+      const batchCount = Math.ceil(fullLines.length / batchLines);
       for (let i = 0; i < batchCount; i++) {
-        const start = i * MAX_LINES;
-        const end = start + MAX_LINES;
+        const start = i * batchLines;
+        const end = start + batchLines;
         let chunk = fullLines.slice(start, end).join("\n");
-        // Add header to subsequent batches
         if (i > 0) {
           chunk = `# ${sessionName || branch} (Part ${i + 1}/${batchCount})\n\n` +
-            `**Date:** ${new Date().toISOString()}\n` +
-            `**Branch:** ${branch}\n\n---\n\n` + chunk;
+            `**Date:** ${new Date().toISOString()}\n**Branch:** ${branch}\n\n---\n\n` + chunk;
         }
         batches.push(chunk);
       }
@@ -219,9 +239,10 @@ export async function log(args: string[]): Promise<void> {
     // Save each batch
     const filepaths: string[] = [];
     for (let i = 0; i < batches.length; i++) {
-      const batchName = batches.length > 1 && i > 0
-        ? `${sessionName || branch}-part${i + 1}`
-        : (sessionName || undefined);
+      const suffix = batches.length > 1 && i > 0
+        ? `-exchange${i + 1}`
+        : undefined;
+      const batchName = suffix ? `${sessionName || branch}${suffix}` : (sessionName || undefined);
       const fp = saveSession(
         branch,
         batches[i],
@@ -346,35 +367,86 @@ function parseDateRange(input: string): Date | null {
   if (t === "today") return now;
   if (t === "yesterday" || t === "yday") { const d = new Date(now); d.setDate(d.getDate() - 1); return d; }
   if (t === "week" || t === "last week" || t === "7") { const d = new Date(now); d.setDate(d.getDate() - 7); return d; }
-  if (t === "month" || t === "last month" || t === "30") { const d = new Date(now); d.setDate(d.getDate() - 30); return d; }
-  if (t === "all" || t === "*") return null; // No filter
-  // Try parse YYYY-MM-DD
+  if (t === "2weeks" || t === "2 weeks" || t === "14") { const d = new Date(now); d.setDate(d.getDate() - 14); return d; }
+  if (t === "3weeks" || t === "3 weeks" || t === "21") { const d = new Date(now); d.setDate(d.getDate() - 21); return d; }
+  if (t === "month" || t === "30") { const d = new Date(now); d.setDate(d.getDate() - 30); return d; }
+  if (t === "all" || t === "*") return null;
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t);
   if (m) return new Date(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3]));
-  // Default: today
   return now;
 }
 
-async function askDateRange(): Promise<Date> {
+function detectAndFormatCode(text: string): string {
+  if (!text) return text;
+  // If text already contains markdown code blocks, leave as-is
+  if (text.includes("\`\`\`")) return text;
+  // Detect common code patterns: indentation, brackets, semicolons, keywords
+  const codeIndicators = ["function ", "const ", "let ", "var ", "import ", "export ", "class ", "interface ", "type ", "def ", "#!/", "<?php", "<html", "{", "}"];
+  const lines = text.split("\n");
+  const codeLines = lines.filter(l => codeIndicators.some(k => l.trim().startsWith(k)) || l.trim().match(/^[{}\[\];]/));
+  if (codeLines.length > 3 || (codeLines.length > 0 && codeLines.length / lines.length > 0.5)) {
+    // It's code - wrap in code block with auto-detected language
+    const lang = detectLanguage(text);
+    return "\`\`\`" + lang + "\n" + text + "\n\`\`\`";
+  }
+  return text;
+}
+
+function detectLanguage(text: string): string {
+  const t = text.slice(0, 500);
+  if (t.includes("import React") || t.includes("export default") || t.includes("useState")) return "tsx";
+  if (t.includes("interface ") || t.includes(": string") || t.includes(": number")) return "typescript";
+  if (t.includes("function ") || t.includes("const ") || t.includes("=>")) return "javascript";
+  if (t.includes("def ") || t.includes("import ") && t.includes(":")) return "python";
+  if (t.includes("#!/bin/") || t.includes("echo ") || t.includes("$")) return "bash";
+  if (t.includes("package ") && t.includes("{")) return "json";
+  if (t.includes("<html") || t.includes("<div")) return "html";
+  return "";
+}
+
+async function askDateRange(): Promise<{ date: Date; batchMode: string; batchLines: number }> {
   const rl = (await import("readline")).createInterface({ input: process.stdin, output: process.stdout });
   console.log("");
-  console.log(dim("  How far back should we capture conversation context?"));
-  console.log(dim("  [1] Today  [2] Yesterday  [3] Last 7 days  [4] Last 30 days  [5] All"));
-  console.log(dim("  Or type a date: 2026-08-11"));
+  console.log(dim("  Capture conversation context since?"));
+  console.log(dim("  [1] Today  [2] Yesterday  [3] This week  [4] Last week  [5] All"));
+  console.log(dim("  Or type: 2026-08-11"));
 
-  return new Promise((resolve) => {
-    rl.question(dim("  Select [1-5] or date: "), (answer) => {
-      rl.close();
-      const a = answer.trim();
-      if (a === "1") resolve(parseDateRange("today")!);
-      else if (a === "2") resolve(parseDateRange("yesterday")!);
-      else if (a === "3") resolve(parseDateRange("week")!);
-      else if (a === "4") resolve(parseDateRange("month")!);
-      else if (a === "5") resolve(parseDateRange("all")!);
-      else if (a) resolve(parseDateRange(a) || parseDateRange("today")!);
+  const date = await new Promise<Date>((resolve) => {
+    rl.question(dim("  Select [1-5] or date: "), (a) => {
+      const t = a.trim();
+      if (t === "1") resolve(parseDateRange("today")!);
+      else if (t === "2") resolve(parseDateRange("yesterday")!);
+      else if (t === "3") { const d = new Date(); d.setDate(d.getDate() - 7); resolve(d); }
+      else if (t === "4") { const d = new Date(); d.setDate(d.getDate() - 14); resolve(d); }
+      else if (t === "5") resolve(parseDateRange("all")!);
+      else if (t) resolve(parseDateRange(t) || parseDateRange("today")!);
       else resolve(parseDateRange("today")!);
     });
   });
+
+  console.log(dim("\n  Batch mode for long conversations?"));
+  console.log(dim("  [1] Per exchange  [2] Per ~800 lines  [3] Single file"));
+
+  const mode = await new Promise<string>((resolve) => {
+    rl.question(dim("  Select [1-3]: "), (a) => {
+      if (a.trim() === "2") resolve("lines");
+      else if (a.trim() === "3") resolve("none");
+      else resolve("exchange");
+    });
+  });
+
+  let lines = 800;
+  if (mode === "lines") {
+    lines = await new Promise<number>((resolve) => {
+      rl.question(dim("  Lines per file (default 800): "), (a) => {
+        const n = parseInt(a.trim());
+        resolve(n > 0 ? n : 800);
+      });
+    });
+  }
+
+  rl.close();
+  return { date, batchMode: mode, batchLines: lines };
 }
 
 function buildFullSummary(
