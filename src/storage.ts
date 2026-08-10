@@ -30,6 +30,7 @@ export interface SessionEntry {
   deletions: number;
   file: string;
   tool?: string | null;
+  changedFiles?: string[]; // actual paths from the git diff (for hotspots/history)
 }
 
 export interface IndexFile {
@@ -61,7 +62,7 @@ export function saveSession(
   branch: string,
   summary: string,
   stats: { filesChanged: number; insertions: number; deletions: number },
-  meta?: { tool: string | null; customName?: string },
+  meta?: { tool: string | null; customName?: string; files?: string[] },
   embedding?: EmbeddingData | null
 ): string {
   ensureDir(sessionsDir());
@@ -99,6 +100,7 @@ ${summary}
     deletions: stats.deletions,
     file: filename,
     tool: meta?.tool || null,
+    changedFiles: meta?.files,
   };
 
   updateIndex(entry);

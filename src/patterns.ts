@@ -171,6 +171,10 @@ export function detectRiskPatterns(
 
 // Helper: parse file list from a session entry
 function getSessionFiles(session: SessionEntry): string[] {
+  // Prefer the actual changed-file list captured from the git diff. Older
+  // sessions predate this field, so fall back to parsing the markdown.
+  if (session.changedFiles !== undefined) return session.changedFiles;
+
   const sessionPath = path.join(
     process.cwd(),
     ".aiscribe",

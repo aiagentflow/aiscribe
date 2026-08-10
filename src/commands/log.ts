@@ -257,7 +257,7 @@ export async function log(args: string[]): Promise<void> {
         branch,
         batches[i],
         diff.stats,
-        { tool: contextTool, customName: batchName },
+        { tool: contextTool, customName: batchName, files: i === 0 ? diff.files : [] },
         i === 0 ? embedding : null
       );
       filepaths.push(fp);
