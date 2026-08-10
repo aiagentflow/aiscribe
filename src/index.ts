@@ -64,7 +64,7 @@ async function main() {
       break;
     case "watch":
       const { watch } = await import("./commands/watch");
-      await watch();
+      await watch(args.slice(1));
       break;
     case "context":
       const { context } = await import("./commands/context");
@@ -174,7 +174,7 @@ function showGlobalHelp() {
     context     Export session history for AI agents
     remote      Configure git remote backup repo
     status      Show active AI coding sessions
-    watch       Watch for AI sessions and auto-capture
+    watch       Watch for AI sessions and notify on completion
     export      Export sessions in JSON/CSV/AI format
     sync        Push local sessions to server/DB
     server      Start the web UI server (localhost:3848)

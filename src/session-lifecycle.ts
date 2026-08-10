@@ -85,7 +85,9 @@ function readPiSessions(): AgentSession[] {
           tool: "pi",
           cwd: decoded,
           name: `pi-${decoded.split("/").pop()}`,
-          status: "running",
+          // pi has no explicit lifecycle state, so infer from file idleness:
+          // written to in the last 60s = active, otherwise finished.
+          status: Date.now() - stat.mtimeMs < 60000 ? "running" : "complete",
           startedAt: entry.timestamp ? new Date(entry.timestamp).getTime() : stat.birthtimeMs,
           updatedAt: stat.mtimeMs,
           prompts: [],
