@@ -135,6 +135,7 @@ export async function startServer(port = 3848, isDocker = false) {
     return store.query({ page, perPage: 10, search, sort });
   });
 
+  // GET session detail
   fastify.get<{ Params: { id: string } }>(
     "/api/sessions/:id",
     async (req, reply) => {
@@ -143,9 +144,49 @@ export async function startServer(port = 3848, isDocker = false) {
         reply.code(404);
         return { error: "Session not found" };
       }
-      return s;
+      // Add session number based on index
+      const all = store.getAll();
+      const idx = all.findIndex(x => x.id === req.params.id);
+      return { ...s, number: idx >= 0 ? idx + 1 : null, total: all.length };
     }
   );
+
+  // Download session as markdown
+  fastify.get<{ Params: { id: string } }>(
+    "/api/sessions/:id/download",
+    async (req, reply) => {
+      const s = store.get(req.params.id);
+      if (!s) { reply.code(404); return { error: "Session not found" }; }
+      const sessionsDir = path.join(process.cwd(), ".aiscribe", "sessions");
+      const files = fs.readdirSync(sessionsDir).filter(f => f.endsWith(".md"));
+      const match = files.find(f => f.startsWith(req.params.id));
+      if (!match) { reply.code(404); return { error: "File not found" }; }
+      const filepath = path.join(sessionsDir, match);
+      reply.header("Content-Type", "text/markdown; charset=utf-8");
+      reply.header("Content-Disposition", `attachment; filename="${match}"`);
+      return fs.createReadStream(filepath);
+    }
+  );
+
+  // Download all sessions as training data pack
+  fastify.get("/api/sessions/download-all", async (_req, reply) => {
+    const sessionsDir = path.join(process.cwd(), ".aiscribe", "sessions");
+    if (!fs.existsSync(sessionsDir)) {
+      reply.code(404);
+      return { error: "No sessions found" };
+    }
+    const zlib = await import("zlib");
+    const tar = await import("tar-stream");
+    const pack = (tar as any).pack();
+    const files = fs.readdirSync(sessionsDir).filter(f => f.endsWith(".md"));
+    for (const f of files) {
+      pack.entry({ name: f }, fs.readFileSync(path.join(sessionsDir, f)));
+    }
+    pack.finalize();
+    reply.header("Content-Type", "application/gzip");
+    reply.header("Content-Disposition", "attachment; filename=aiscribe-sessions.tar.gz");
+    return pack.pipe((zlib as any).createGzip());
+  });
 
   // POST: store a session (used by aiscribe sync)
   fastify.post("/api/sessions", async (req, reply) => {

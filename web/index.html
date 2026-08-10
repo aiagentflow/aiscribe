@@ -268,10 +268,12 @@ function showSession(id){
     document.getElementById("list-view").style.display="none";
     document.getElementById("detail-view").classList.add("active");
     var d=new Date(s.date).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric",hour:"2-digit",minute:"2-digit"});
-    var meta='<div class="detail-card"><h1>'+esc(s.branch)+'</h1>'+
+    var meta='<div class="detail-card"><h1>'+(s.number?'#'+s.number+' ':'')+esc(s.branch)+'</h1>'+
       '<div class="detail-meta-row"><span>'+d+'</span><span class="sep">·</span><span>'+s.filesChanged+' files</span><span class="sep">·</span><span>+'+s.insertions+' / -'+s.deletions+'</span>'+
       (s.aiTool?'<span class="sep">·</span><span class="badge badge-tool">'+esc(s.aiTool)+'</span>':'')+
-      '</div><div class="detail-body">'+md(s.summary||"No summary.")+'</div></div>';
+      '</div>'+
+      '<div style="margin-bottom:20px"><a href="/api/sessions/'+id+'/download" class="btn-icon" style="display:inline-flex;text-decoration:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download .md</a></div>'+
+      '<div class="detail-body">'+md(s.summary||"No summary.")+'</div></div>';
     document.getElementById("detail-content").innerHTML=meta;
     window.scrollTo({top:0,behavior:"smooth"});
   }).catch(function(){document.getElementById("detail-content").innerHTML='<p>Could not load session.</p>'});
