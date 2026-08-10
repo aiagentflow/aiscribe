@@ -3,6 +3,7 @@ import { generateSummary } from "../llm";
 import { SYSTEM_PROMPT, buildUserPrompt } from "../prompt";
 import { saveSession } from "../storage";
 import { captureContext, formatContextForPrompt, readPiFullTranscript } from "../context/capture";
+import type { EmbeddingData } from "../embeddings";
 import { writeContextFile } from "./context";
 import { hasEnvConfig, loadConfig } from "../onboarding";
 import * as path from "path";
@@ -236,7 +237,16 @@ export async function log(args: string[]): Promise<void> {
       }
     }
 
-    // Save each batch
+    // Embed the full session once for semantic search. The real vector is
+    // attached to the first saved file so `aiscribe search` can match it.
+    let embedding: EmbeddingData | null = null;
+    try {
+      const { generateEmbedding } = await import("../embeddings");
+      embedding = await generateEmbedding(fullSummary);
+    } catch {}
+
+    // Save each batch. Only the first file carries the embedding; extra
+    // parts (exchanges) are saved without one to avoid duplicate matches.
     const filepaths: string[] = [];
     for (let i = 0; i < batches.length; i++) {
       const suffix = batches.length > 1 && i > 0
@@ -248,25 +258,13 @@ export async function log(args: string[]): Promise<void> {
         batches[i],
         diff.stats,
         { tool: contextTool, customName: batchName },
-        null
+        i === 0 ? embedding : null
       );
       filepaths.push(fp);
     }
-    let hasEmbedding = false;
-    try {
-      const { generateEmbedding } = await import("../embeddings");
-      const emb = await generateEmbedding(fullSummary);
-      hasEmbedding = !!emb;
-    } catch {}
 
-    // 5. Save
-    const filepath = saveSession(
-      branch,
-      fullSummary,
-      diff.stats,
-      { tool: contextTool, customName: sessionName },
-      hasEmbedding ? { vector: [], model: "", generated: "" } : null
-    );
+    // Primary file (first batch) — used for the optional server POST below.
+    const filepath = filepaths[0];
 
     // 6. Auto-generate context file for AI agents
     try { writeContextFile(); } catch {}
