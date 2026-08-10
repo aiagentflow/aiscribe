@@ -127,6 +127,7 @@ color:var(--coral-light);font-size:13px;border:1px solid var(--line)}
 </style>
 </head>
 <body>
+<canvas id="particles" style="position:fixed;inset:0;pointer-events:none;z-index:0" aria-hidden="true"></canvas>
 
 <!-- NAV -->
 <nav class="nav">
@@ -205,6 +206,34 @@ color:var(--coral-light);font-size:13px;border:1px solid var(--line)}
 </div>
 
 <script>
+  var currentPage=1,totalPages=1;
+
+// Particle background
+(function(){
+  var c=document.getElementById("particles"),ctx=c.getContext("2d"),ps=[];
+  function r(){c.width=window.innerWidth;c.height=window.innerHeight}
+  r();window.addEventListener("resize",r);
+  for(var i=0;i<35;i++)ps.push({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*2+.5,vx:(Math.random()-.5)*.3,vy:-(Math.random()*.5+.2),a:Math.random()*.4+.1,s:Math.random()*.5+.3});
+  function d(){ctx.clearRect(0,0,c.width,c.height);
+    for(var i=0;i<ps.length;i++){var p=ps[i];p.y+=p.vy*p.s;p.x+=p.vx;
+      if(p.y<-10){p.y=c.height+10;p.x=Math.random()*c.width}
+      if(p.x<-10)p.x=c.width+10;if(p.x>c.width+10)p.x=-10;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle="rgba(255,99,84,"+p.a+")";ctx.fill();
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r*3,0,Math.PI*2);ctx.fillStyle="rgba(255,99,84,"+(p.a*.15)+")";ctx.fill();}
+    requestAnimationFrame(d)}
+  d();
+})();
+
+// Copy to clipboard helper
+function copyId(id, el){
+  navigator.clipboard.writeText(id).then(function(){
+    var orig=el.innerHTML;
+    el.innerHTML='Copied!';
+    el.style.color='var(--coral-light)';
+    setTimeout(function(){el.innerHTML=orig;el.style.color=''},1500);
+  });
+}
+
 var currentPage=1,totalPages=1;
 
 function load(){
@@ -244,7 +273,7 @@ function renderList(items){
     if(s.aiTool)b+='<span class="badge badge-tool">'+esc(s.aiTool)+'</span> ';
     return '<div class="session-card" onclick="showSession(\''+s.id+'\')">'+
       '<div class="card-row"><span class="card-title">'+esc(s.branch)+'</span><div class="badges">'+b+'</div></div>'+
-      '<div class="card-meta"><span>'+d+'</span><span class="sep">·</span><span>'+s.filesChanged+' files</span><span class="sep">·</span><span>+'+s.insertions+' / -'+s.deletions+'</span></div>'+
+      '<div class="card-meta"><span>'+d+'</span><span class="sep">·</span><span>'+s.filesChanged+' files</span><span class="sep">·</span><span>+'+s.insertions+' / -'+s.deletions+'</span><span class="sep">·</span><span style="font-family:monospace;font-size:11px;color:var(--fg-3)">'+s.id+'</span><button onclick="event.stopPropagation();copyId(\''+s.id+'\',this)" class="btn-icon" style="padding:3px 8px;font-size:11px;margin-left:4px" title="Copy session ID">Copy ID</button></div>'+
       (s.summarySnippet?'<div class="card-snippet">'+esc(s.summarySnippet)+'</div>':'')+
       '</div>';
   }).join("");
@@ -272,7 +301,7 @@ function showSession(id){
       '<div class="detail-meta-row"><span>'+d+'</span><span class="sep">·</span><span>'+s.filesChanged+' files</span><span class="sep">·</span><span>+'+s.insertions+' / -'+s.deletions+'</span>'+
       (s.aiTool?'<span class="sep">·</span><span class="badge badge-tool">'+esc(s.aiTool)+'</span>':'')+
       '</div>'+
-      '<div style="margin-bottom:20px"><a href="/api/sessions/'+id+'/download" class="btn-icon" style="display:inline-flex;text-decoration:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download .md</a></div>'+
+      '<div style="margin-bottom:20px;display:flex;gap:8px;flex-wrap:wrap"><a href="/api/sessions/'+id+'/download" class="btn-icon" style="display:inline-flex;text-decoration:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download .md</a><button onclick="copyId(\''+id+'\',this)" class="btn-icon" title="Copy session ID"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy ID</button></div>'+
       '<div class="detail-body">'+md(s.summary||"No summary.")+'</div></div>';
     document.getElementById("detail-content").innerHTML=meta;
     window.scrollTo({top:0,behavior:"smooth"});
