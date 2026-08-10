@@ -9,199 +9,99 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
-:root{--bg:#faf9f6;--surface:#fff;--line:#e6e4df;--line-hi:#d4d1c9;--text:#1b1b18;--text-dim:#5e5c54;--text-muted:#949286;--rust:#b8583c;--rust-hi:#d4724f;--rust-dim:#8b4530;--rust-glow:rgba(184,88,60,0.08);--shell:#f3f1ec;--shell-line:#e6e4df;--shell-raised:#ebe9e2;--chalk:#1b1b18;--chalk-dim:#5e5c54;--ok:#3b8242;--warn:#c48c2e;--err:#c43c3c;font-size:16px}
+:root{--canvas:#f2efe8;--paper:#fff;--ink:#1a1a21;--ink-soft:#57555f;--line:#e3ded3;
+  --shell:#1a1a21;--shell-raised:#22222b;--shell-line:#32323d;--chalk:#e9e7e0;--chalk-dim:#9b99a4;
+  --rust:#b5552f;--rust-strong:#9a4526;--rust-tint:#f6ede7}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden}
-
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--canvas);color:var(--ink);height:100vh;overflow:hidden}
 /* HEADER */
-.header{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--line);height:52px;z-index:10}
-.header-brand{display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--text);font-weight:600;font-size:14px;white-space:nowrap}
-.header-brand img{width:24px;height:24px;border-radius:5px}
-.header-sep{width:1px;height:20px;background:var(--line)}
-.header-title{flex:1;font-size:13px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--text-dim);font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;transition:all 0.12s;white-space:nowrap;text-decoration:none}
-.btn:hover{background:var(--shell-raised);border-color:var(--line-hi)}
-.btn.icon{padding:6px;min-width:32px;justify-content:center}
-.btn.primary{background:var(--rust);color:#fff;border-color:var(--rust)}
-.btn.primary:hover{background:var(--rust-hi)}
-.btn.danger{color:var(--err);border-color:transparent}
-.btn-group{display:flex;gap:1px}.btn-group .btn{border-radius:0}.btn-group .btn:first-child{border-radius:6px 0 0 6px}.btn-group .btn:last-child{border-radius:0 6px 6px 0}
-.badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;letter-spacing:0.02em}
-.badge-ok{background:rgba(59,130,66,0.1);color:var(--ok)}
-.badge-err{background:rgba(196,60,60,0.1);color:var(--err)}
-.status{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted)}
+.header{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--paper);border-bottom:1px solid var(--line);height:46px;z-index:10;flex-shrink:0}
+.header-brand{display:flex;align-items:center;gap:7px;text-decoration:none;color:var(--ink);font-weight:600;font-size:13px}
+.header-brand img{width:22px;height:22px;border-radius:4px}
+.header-title{flex:1;font-size:12px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:5px;border:1px solid var(--line);background:var(--paper);color:var(--ink-soft);font-size:11px;cursor:pointer;font-family:inherit;font-weight:500;transition:all 0.1s;white-space:nowrap}
+.btn:hover{background:#f5f2ec;border-color:#d4cfc5}.btn.primary{background:var(--rust);color:#fff;border-color:var(--rust)}.btn.primary:hover{background:var(--rust-strong)}
 
 /* TOOLBAR */
-.toolbar{display:flex;align-items:center;gap:2px;padding:6px 12px;background:var(--shell);border-bottom:1px solid var(--shell-line);overflow-x:auto;flex-shrink:0}
-.toolbar .sep{width:1px;height:18px;background:var(--shell-line);margin:0 6px;flex-shrink:0}
-.tbtn{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;border:none;background:transparent;color:var(--chalk-dim);cursor:pointer;font-family:inherit;font-size:15px;transition:all 0.1s;flex-shrink:0}
+.toolbar{display:flex;align-items:center;gap:2px;padding:5px 10px;background:var(--shell);border-bottom:1px solid var(--shell-line);overflow-x:auto;flex-shrink:0}
+.toolbar .sep{width:1px;height:16px;background:var(--shell-line);margin:0 5px;flex-shrink:0}
+.tbtn{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:5px;border:none;background:transparent;color:var(--chalk-dim);cursor:pointer;font-size:13px;font-family:inherit;transition:all 0.1s;flex-shrink:0}
 .tbtn:hover{background:var(--shell-raised);color:var(--chalk)}
-.tbtn img,.tbtn svg{width:15px;height:15px}
 
-/* SPLIT PANE */
-.split{display:flex;flex:1;overflow:hidden;background:var(--bg)}
-.pane{overflow-y:auto;position:relative}
-.pane-left{flex:1;background:var(--surface)}
-.pane-right{flex:1;background:var(--bg)}
-.divider{width:6px;background:var(--line);cursor:col-resize;flex-shrink:0;transition:background 0.15s}
+/* SPLIT */
+.split{display:flex;flex:1;overflow:hidden}
+.pane{overflow-y:auto;overflow-x:hidden;position:relative}
+.pane-left{flex:1;background:var(--shell)}
+.pane-right{flex:1;background:var(--canvas)}
+.divider{width:5px;background:var(--shell-line);cursor:col-resize;flex-shrink:0}
 .divider:hover,.divider.dragging{background:var(--rust)}
-/* Editor */
-.editor{width:100%;height:100%;border:none;resize:none;padding:32px;font-family:'SF Mono','Fira Code','Cascadia Code','Consolas',monospace;font-size:13px;line-height:1.7;color:var(--text);background:transparent;outline:none;tab-size:2}
-.editor::placeholder{color:var(--text-muted)}
-/* Preview */
-.preview{padding:40px 48px;min-height:100%;background:var(--bg)}
-.preview .markdown-body{font-size:15px;line-height:1.75;box-shadow:none!important;padding:0!important;background:transparent!important}
+.editor{width:100%;height:100%;border:none;resize:none;padding:28px 32px;font-family:'SF Mono','Fira Code','Cascadia Code',monospace;font-size:13px;line-height:1.65;color:var(--chalk);background:transparent;outline:none;tab-size:2}
+.editor::placeholder{color:var(--chalk-dim)}
+.preview{padding:36px 44px;min-height:100%}
+.preview .markdown-body{font-size:15px;line-height:1.7;box-shadow:none!important;padding:0!important;background:transparent!important}
 
 /* SETTINGS */
-.settings{position:fixed;top:52px;right:16px;z-index:50;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 40px rgba(0,0,0,0.12);padding:16px;min-width:200px;display:none}
+.settings{position:fixed;top:46px;right:12px;z-index:50;background:var(--paper);border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 30px rgba(0,0,0,0.1);padding:14px;min-width:190px;display:none}
 .settings.open{display:block}
-.settings h3{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:10px}
-.settings label{display:block;font-size:12px;color:var(--text-dim);margin-bottom:4px}
-.settings select,.settings input{width:100%;padding:6px 10px;border-radius:6px;border:1px solid var(--line);font-size:12px;font-family:inherit;margin-bottom:10px;background:var(--surface);color:var(--text)}
-.settings select:focus,.settings input:focus{outline:none;border-color:var(--rust)}
+.settings h3{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--ink-soft);margin-bottom:8px}
+.settings label{display:block;font-size:11px;color:var(--ink-soft);margin-bottom:3px}
+.settings select,.settings input{width:100%;padding:5px 8px;border-radius:4px;border:1px solid var(--line);font-size:11px;font-family:inherit;margin-bottom:8px;background:var(--paper);color:var(--ink)}
 
-/* MOBILE */
-@media(max-width:768px){
-  .split{flex-direction:column}
-  .pane-left{flex:0 0 45%;border-bottom:1px solid var(--line)}
-  .divider{width:100%;height:6px;cursor:row-resize}
-  .preview{padding:20px}.editor{padding:20px}
-  .header-title{display:none}
-}
-
-/* PRINT */
-@media print{
-  .header,.toolbar,.divider,.pane-left,.settings{display:none!important}
-  .pane-right{overflow:visible}
-  .preview{padding:0}
-}
+@media(max-width:768px){.split{flex-direction:column}.pane-left{flex:0 0 45%;border-bottom:1px solid var(--line)}.divider{width:100%;height:5px;cursor:row-resize}.preview{padding:18px}.editor{padding:18px}}
+@media print{.header,.toolbar,.divider,.pane-left,.settings{display:none!important}.pane-right{overflow:visible}.preview{padding:0}}
 </style>
 </head>
 <body>
-
-<!-- HEADER -->
 <header class="header">
-  <a href="/" class="header-brand">
-    <img src="logo.png" alt="AiScribe" onerror="this.style.display='none'">
-    <span>AiScribe</span>
-  </a>
-  <span class="header-sep"></span>
+  <a href="/" class="header-brand"><img src="logo.png" alt="AiScribe" onerror="this.style.display='none'"><span>AiScribe</span></a>
   <span class="header-title" id="doc-title">Markdown to PDF</span>
-  <span id="export-status" class="status"></span>
-  <button class="btn icon" onclick="toggleSettings()" title="Page settings">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-  </button>
-  <a href="https://github.com/aiagentflow/aiscribe" target="_blank" rel="noopener" class="btn icon" title="GitHub">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0a12 12 0 00-3.8 23.4c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.6-4-1.6-.5-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.6-.3-5.4-1.3-5.4-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 016 0c2.3-1.5 3.3-1.2 3.3-1.2.7 1.7.3 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.4 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0012 0z"/></svg>
-  </a>
-  <span class="header-sep"></span>
+  <button class="btn" onclick="toggleSettings()" title="Settings">Settings</button>
   <button class="btn" onclick="downloadMd()">Download .md</button>
-  <button class="btn primary" onclick="exportPdf()" id="btn-export">Export PDF</button>
-  <button class="btn" onclick="window.close()">Close</button>
+  <button class="btn primary" onclick="window.print()">Export PDF</button>
 </header>
-
-<!-- TOOLBAR -->
 <div class="toolbar">
-  <button class="tbtn" onclick="fmt('bold')" title="Bold (⌘B)"><b>B</b></button>
-  <button class="tbtn" onclick="fmt('italic')" title="Italic (⌘I)"><i>I</i></button>
+  <button class="tbtn" onclick="fmt('bold')" title="Bold"><b>B</b></button>
+  <button class="tbtn" onclick="fmt('italic')" title="Italic"><i>I</i></button>
   <button class="tbtn" onclick="fmt('strike')" title="Strikethrough"><s>S</s></button>
-  <button class="tbtn" onclick="fmt('code')" title="Inline code">&lt;/&gt;</button>
+  <button class="tbtn" onclick="fmt('code')" title="Code">&lt;/&gt;</button>
   <span class="sep"></span>
   <button class="tbtn" onclick="fmt('h2')" title="Heading">H</button>
-  <button class="tbtn" onclick="fmt('quote')" title="Blockquote">"</button>
+  <button class="tbtn" onclick="fmt('quote')" title="Quote">"</button>
   <button class="tbtn" onclick="fmt('ul')" title="Bullet list">•</button>
-  <button class="tbtn" onclick="fmt('ol')" title="Numbered list">1.</button>
+  <button class="tbtn" onclick="fmt('ol')" title="Numbered">1.</button>
   <span class="sep"></span>
   <button class="tbtn" onclick="fmt('link')" title="Link">🔗</button>
   <button class="tbtn" onclick="fmt('image')" title="Image">🖼</button>
   <button class="tbtn" onclick="fmt('table')" title="Table">⊞</button>
-  <button class="tbtn" onclick="fmt('hr')" title="Horizontal rule">—</button>
-  <div style="flex:1"></div>
-  <button class="tbtn" onclick="downloadMd()" title="Download Markdown">↓</button>
+  <button class="tbtn" onclick="fmt('hr')" title="Rule">—</button>
 </div>
-
-<!-- SETTINGS PANEL -->
 <div class="settings" id="settings">
-  <h3>Page Settings</h3>
+  <h3>Page settings</h3>
   <label>Paper size</label>
-  <select id="page-size" onchange="updateSettings()">
-    <option value="a4">A4 (210 × 297 mm)</option>
-    <option value="letter" selected>Letter (8.5 × 11 in)</option>
-    <option value="legal">Legal (8.5 × 14 in)</option>
-  </select>
-  <label>Margin (mm)</label>
-  <input type="number" id="page-margin" value="20" min="5" max="50" onchange="updateSettings()">
+  <select id="page-size" onchange="updateSettings()"><option value="a4">A4</option><option value="letter" selected>Letter</option><option value="legal">Legal</option></select>
+  <label>Margin (mm)</label><input type="number" id="page-margin" value="20" min="5" max="50" onchange="updateSettings()">
 </div>
-
-<!-- SPLIT PANE -->
 <div class="split">
-  <div class="pane pane-left">
-    <textarea class="editor" id="editor" placeholder="Write Markdown here..." oninput="renderPreview()"></textarea>
-  </div>
+  <div class="pane pane-left"><textarea class="editor" id="editor" placeholder="Write Markdown here..." oninput="renderPreview()"></textarea></div>
   <div class="divider" id="divider"></div>
-  <div class="pane pane-right">
-    <div class="preview" id="preview"><div class="markdown-body"><p>Loading...</p></div></div>
-  </div>
+  <div class="pane pane-right"><div class="preview" id="preview"><div class="markdown-body"><p>Loading...</p></div></div></div>
 </div>
-
 <script>
-// Markdown config
 marked.setOptions({breaks:true,gfm:true});
-marked.use({renderer:{code:function(t,l){try{var c=hljs.highlight(t,{language:l||"",ignoreIllegal:true}).value;return'<pre><code class="hljs language-'+(l||"")+'">'+c+"</code></pre>"}catch(e){return'<pre><code class="hljs">'+t+"</code></pre>"}}}});
-
+marked.use({renderer:{code:function(t,l){try{var c=hljs.highlight(t,{language:l||"",ignoreIllegal:true}).value;return'<pre><code class="hljs">'+c+"</code></pre>"}catch(e){return'<pre><code>'+t+"</code></pre>"}}}});
 var editor=document.getElementById("editor"),preview=document.getElementById("preview"),original="",pageSize="letter",pageMargin=20;
-
-function renderPreview(){
-  var md=editor.value,title=document.getElementById("doc-title");
-  // Add page style comment for print
-  preview.innerHTML='<div class="markdown-body" style="max-width:'+(pageSize==="a4"?"794":"letter"==="legal"?"816":"816")+'px;margin:0 auto">'+marked.parse(md)+"</div>";
-}
-
-function loadSession(id){
-  fetch("/api/sessions/"+id).then(function(r){return r.json()}).then(function(s){
-    if(s.error){preview.innerHTML="<p>Session not found.</p>";return}
-    document.getElementById("doc-title").textContent=s.branch||"Markdown to PDF";
-    var d=new Date(s.date).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric",hour:"2-digit",minute:"2-digit"});
-    var t="# "+(s.number?"#"+s.number+" ":"")+s.branch+"\n\n**"+d+"** · "+s.filesChanged+" files · +"+s.insertions+" / -"+s.deletions+(s.aiTool?" · "+s.aiTool:"")+"\n\n---\n\n"+(s.summary||"_No summary._");
-    original=t;editor.value=t;renderPreview();
-  }).catch(function(){preview.innerHTML="<p>Could not load session.</p>"});
-}
-
-function fmt(type){
-  var e=editor,t=e.selectionStart,n=e.selectionEnd,v=e.value,s=v.substring(t,n)||"text";
-  var wrap=function(a,b){e.value=v.substring(0,t)+a+s+b+v.substring(n);e.focus();e.selectionStart=t+a.length;e.selectionEnd=n+a.length;renderPreview()};
-  var prefix=function(a){var l=v.substring(0,t).split("\n"),start=l[l.length-1];e.value=v.substring(0,t)+a+start+v.substring(n);renderPreview()};
-  if(type==="bold")wrap("**","**");else if(type==="italic")wrap("_","_");else if(type==="strike")wrap("~~","~~");
-  else if(type==="code")wrap("`","`");else if(type==="h2")prefix("## ");else if(type==="quote")prefix("> ");
-  else if(type==="ul")prefix("- ");else if(type==="ol")prefix("1. ");else if(type==="link")wrap("[","](url)");
-  else if(type==="image")wrap("![alt text](",")");else if(type==="table")wrap("","\n\n| Column A | Column B |\n| -------- | -------- |\n| Cell 1   | Cell 2   |\n");
-  else if(type==="hr")wrap("\n\n---\n\n","");
-}
-
-function updateSettings(){
-  pageSize=document.getElementById("page-size").value;
-  pageMargin=parseInt(document.getElementById("page-margin").value)||20;
-  renderPreview();localStorage.setItem("aiscribe-pdf-settings",JSON.stringify({pageSize:pageSize,pageMargin:pageMargin}));
-}
+function renderPreview(){preview.innerHTML='<div class="markdown-body" style="max-width:800px;margin:0 auto">'+marked.parse(editor.value)+"</div>"}
+function loadSession(id){fetch("/api/sessions/"+id).then(function(r){return r.json()}).then(function(s){if(s.error){preview.innerHTML="<p>Session not found.</p>";return}document.getElementById("doc-title").textContent=s.branch||"Export";var d=new Date(s.date).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric",hour:"2-digit",minute:"2-digit"});var t="# "+(s.number?"#"+s.number+" ":"")+s.branch+"\n\n**"+d+"** · "+s.filesChanged+" files · +"+s.insertions+"/-"+s.deletions+(s.aiTool?" · "+s.aiTool:"")+"\n\n---\n\n"+(s.summary||"_No summary._");original=t;editor.value=t;renderPreview()}).catch(function(){preview.innerHTML="<p>Could not load session.</p>"})}
+function fmt(t){var e=editor,st=e.selectionStart,en=e.selectionEnd,v=e.value,s=v.substring(st,en)||"text";function w(a,b){e.value=v.substring(0,st)+a+s+b+v.substring(en);e.focus();e.selectionStart=st+a.length;e.selectionEnd=en+a.length;renderPreview()}function p(a){var l=v.substring(0,st).split("\n"),ls=l[l.length-1];e.value=v.substring(0,st-st.toString().length)+a+ls+v.substring(en);renderPreview()}if(t==="bold")w("**","**");else if(t==="italic")w("_","_");else if(t==="strike")w("~~","~~");else if(t==="code")w("`","`");else if(t==="h2")p("## ");else if(t==="quote")p("> ");else if(t==="ul")p("- ");else if(t==="ol")p("1. ");else if(t==="link")w("[","](url)");else if(t==="image")w("![alt](",")");else if(t==="table")w("","\n\n| Col A | Col B |\n| --- | --- |\n| Cell | Cell |\n");else if(t==="hr")w("\n\n---\n\n","")}
+function updateSettings(){pageSize=document.getElementById("page-size").value;pageMargin=parseInt(document.getElementById("page-margin").value)||20;renderPreview();localStorage.setItem("apdf",JSON.stringify({s:pageSize,m:pageMargin}))}
 function toggleSettings(){document.getElementById("settings").classList.toggle("open")}
 function downloadMd(){var b=new Blob([editor.value],{type:"text/markdown"});var a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=(document.getElementById("doc-title").textContent||"document").replace(/\s+/g,"-")+".md";a.click()}
-function exportPdf(){
-  var btn=document.getElementById("btn-export"),status=document.getElementById("export-status");
-  btn.disabled=true;btn.textContent="Generating...";status.innerHTML='<span class="badge badge-ok">PDF ready</span>';
-  window.print();
-  setTimeout(function(){btn.disabled=false;btn.textContent="Export PDF";status.innerHTML=""},2000);
-}
-
-// Resizable divider
-var divider=document.getElementById("divider"),left=document.querySelector(".pane-left"),right=document.querySelector(".pane-right"),dragging=false;
-divider.addEventListener("mousedown",function(){dragging=true;divider.classList.add("dragging");document.body.style.cursor="col-resize";document.body.style.userSelect="none"});
-document.addEventListener("mousemove",function(e){if(!dragging)return;var total=left.parentElement.offsetWidth,x=e.clientX,pct=(x/total)*100;if(pct>20&&pct<80){left.style.flex="0 0 "+pct+"%";right.style.flex="0 0 "+(100-pct)+"%"}});
-document.addEventListener("mouseup",function(){dragging=false;divider.classList.remove("dragging");document.body.style.cursor="";document.body.style.userSelect=""});
-
-// Load
-var s=localStorage.getItem("aiscribe-pdf-settings");if(s){var p=JSON.parse(s);pageSize=p.pageSize||"letter";pageMargin=p.pageMargin||20;document.getElementById("page-size").value=pageSize;document.getElementById("page-margin").value=pageMargin}
-var id=new URLSearchParams(window.location.search).get("id");
-if(id)loadSession(id);else{editor.value="# New Document\n\nStart writing Markdown here...";renderPreview()}
+var d=document.getElementById("divider"),left=document.querySelector(".pane-left"),right=document.querySelector(".pane-right"),dragging=false;
+d.addEventListener("mousedown",function(){dragging=true;d.classList.add("dragging");document.body.style.cursor="col-resize";document.body.style.userSelect="none"});
+document.addEventListener("mousemove",function(e){if(!dragging)return;var t=left.parentElement.offsetWidth,x=e.clientX,p=(x/t)*100;if(p>20&&p<80){left.style.flex="0 0 "+p+"%";right.style.flex="0 0 "+(100-p)+"%"}});
+document.addEventListener("mouseup",function(){dragging=false;d.classList.remove("dragging");document.body.style.cursor="";document.body.style.userSelect=""});
+var s=localStorage.getItem("apdf");if(s){var p=JSON.parse(s);pageSize=p.s||"letter";pageMargin=p.m||20;document.getElementById("page-size").value=pageSize;document.getElementById("page-margin").value=pageMargin}
+var id=new URLSearchParams(window.location.search).get("id");if(id)loadSession(id);else{editor.value="# New Document\n\nStart writing...";renderPreview()}
 </script>
 </body>
 </html>
