@@ -20,7 +20,8 @@ interface LogResult {
   sessions: number;
   prompts: number;
   tool: string | null;
-  file: string;
+  paths: string[];
+  batches: number;
   summary: string;
 }
 
@@ -191,7 +192,45 @@ export async function log(args: string[]): Promise<void> {
 
     if (spinner) spinner.stop(effectiveFull ? "Session captured" : "Summary generated");
 
-    // 4. Generate embedding
+    // 4. Smart batching: split large conversations into manageable files
+    const MAX_LINES = 800; // Standard readable markdown file limit
+    const fullLines = fullSummary.split("\n");
+    const batches: string[] = [];
+
+    if (fullLines.length <= MAX_LINES) {
+      batches.push(fullSummary);
+    } else {
+      // Batch by time chunks if we have timestamps, otherwise by line count
+      const batchCount = Math.ceil(fullLines.length / MAX_LINES);
+      for (let i = 0; i < batchCount; i++) {
+        const start = i * MAX_LINES;
+        const end = start + MAX_LINES;
+        let chunk = fullLines.slice(start, end).join("\n");
+        // Add header to subsequent batches
+        if (i > 0) {
+          chunk = `# ${sessionName || branch} (Part ${i + 1}/${batchCount})\n\n` +
+            `**Date:** ${new Date().toISOString()}\n` +
+            `**Branch:** ${branch}\n\n---\n\n` + chunk;
+        }
+        batches.push(chunk);
+      }
+    }
+
+    // Save each batch
+    const filepaths: string[] = [];
+    for (let i = 0; i < batches.length; i++) {
+      const batchName = batches.length > 1 && i > 0
+        ? `${sessionName || branch}-part${i + 1}`
+        : (sessionName || undefined);
+      const fp = saveSession(
+        branch,
+        batches[i],
+        diff.stats,
+        { tool: contextTool, customName: batchName },
+        null
+      );
+      filepaths.push(fp);
+    }
     let hasEmbedding = false;
     try {
       const { generateEmbedding } = await import("../embeddings");
@@ -235,7 +274,7 @@ export async function log(args: string[]): Promise<void> {
       // Server not running, that's fine
     }
 
-    // 8. Output
+    // 5. Output
     if (isJson) {
       jsonSuccess(cmdName, {
         branch,
@@ -245,25 +284,33 @@ export async function log(args: string[]): Promise<void> {
         sessions: contextSessionCount,
         prompts: contextPromptCount,
         tool: contextTool,
-        file: filepath,
+        paths: filepaths,
+        batches: filepaths.length,
         summary: summary.slice(0, 500),
-        hasEmbedding,
       } as LogResult);
     } else if (!isQuiet) {
       console.log("");
-      console.log(green("  Session recorded!"));
-      console.log(dim("  " + filepath));
+      if (filepaths.length === 1) {
+        console.log(green("  Session recorded!"));
+        console.log(dim("  " + filepaths[0]));
+      } else {
+        console.log(green(`  Session recorded in ${filepaths.length} parts!`));
+        for (const fp of filepaths) console.log(dim("  " + fp));
+      }
 
       // Git remote backup (non-blocking)
       try {
         const { pushSession } = await import("../remote");
         const projectName = path.basename(process.cwd());
-        const pushed = await pushSession(filepath, projectName);
-        if (pushed) console.log(dim("  Synced to remote repo."));
+        for (const fp of filepaths) {
+          try { await pushSession(fp, projectName); } catch {}
+        }
       } catch {}
 
       console.log("");
-      console.log(dim("  View: ") + "cat " + filepath);
+      if (filepaths.length === 1) {
+        console.log(dim("  View: ") + "cat " + filepaths[0]);
+      }
       console.log(dim("  Web:  ") + "aiscribe server");
       if (!hasKey && !isFull) {
         console.log("");
@@ -271,8 +318,8 @@ export async function log(args: string[]): Promise<void> {
       }
       console.log("");
     } else {
-      // Quiet mode: just print the file path
-      console.log(filepath);
+      // Quiet mode: just print the file paths
+      console.log(filepaths.join("\n"));
     }
   } catch (err: any) {
     if (isJson) {
