@@ -184,11 +184,14 @@ function showGlobalHelp() {
 
   ${bold("Examples:")}
     aiscribe log                    Summarize current changes
-    aiscribe log -c                 Include AI tool prompt history
+    aiscribe log -c -n "my-feature" Capture AI context with custom name
     aiscribe search payment         Find sessions related to payment
-    aiscribe history payment.ts     See every session touching this file
+    aiscribe history package.json   See every session touching this file
     aiscribe hotspots               What files change most often?
-    aiscribe status                 See active Claude Code sessions
+    aiscribe context --last 5       Export recent session history
+    aiscribe export --format json   Export all sessions as JSON
+    aiscribe remote set <git-url>   Configure git backup repo
+    aiscribe status                 See active AI coding sessions
     aiscribe watch                  Auto-detect when sessions complete
     aiscribe server                 Browse sessions in web UI
     aiscribe doctor                 Validate your setup
@@ -197,6 +200,8 @@ function showGlobalHelp() {
   ${bold("Global flags:")}
     --version, -v    Show version
     --help, -h       Show help
+    --json           Output as JSON
+    --quiet, -q      Suppress non-essential output
     <command> --help Show help for a specific command
 
   ${dim("Run 'aiscribe doctor' to check your setup.")}
@@ -211,25 +216,30 @@ function showLogHelp() {
     aiscribe log [flags]
 
   ${bold("Flags:")}
-    -c, --with-context    Capture AI tool prompt history
+    -c, --with-context    Capture AI tool conversation history
+    -f, --full            Store raw conversation without LLM summary
+    -n, --name <name>     Custom session name for the journal entry
     --json                Output as JSON
+    --quiet, -q           Suppress progress output
     -h, --help            Show this help
 
   ${bold("What it does:")}
     1. Reads your git diff (staged + unstaged)
-    2. Optionally captures prompts from Claude Code, Codex, or Aider
-    3. Sends to LLM for structured summarization
+    2. Optionally captures full AI conversation (prompts, responses, tool calls)
+    3. Sends to LLM for structured summarization (if API key configured)
     4. Saves as markdown in .aiscribe/sessions/
+    5. Auto-generates .aiscribe/CONTEXT.md for AI agents
 
   ${bold("Examples:")}
     aiscribe log                Basic session journal
     aiscribe log -c             Include AI tool context
-    aiscribe log --with-context Same as -c
+    aiscribe log -c -n "stripe" Custom name with context
+    aiscribe log -f             Raw capture, no LLM needed
 
   ${bold("Configuration:")}
-    First run asks you to select a provider and enter an API key.
-    Saved to ~/.aiscribe/config.json — never asked again.
-    Or set: AISCRIBE_API_KEY and AISCRIBE_PROVIDER env vars.
+    Zero config works out of the box. Add an LLM for AI summaries:
+    aiscribe setup --reconfigure    Choose provider and enter API key
+    ${dim("Or set: AISCRIBE_API_KEY and AISCRIBE_PROVIDER env vars.")}
 `);
 }
 
@@ -238,7 +248,7 @@ function showSearchHelp() {
   ${bold("aiscribe search")} — Find sessions by meaning
 
   ${bold("Usage:")}
-    aiscribe search <query>
+    aiscribe search <query> [--json]
 
   ${bold("How it works:")}
     With API key: semantic search using vector embeddings
