@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AiScribe · Markdown Editor</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.6.1/github-markdown-light.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<style>
+:root{--bg:#f6f8fa;--border:#d0d7de;--accent:#d94a3a;--text:#1f2328;--muted:#656d76}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);height:100vh;overflow:hidden}
+/* Toolbar */
+.toolbar{display:flex;align-items:center;gap:8px;padding:8px 16px;background:#fff;border-bottom:1px solid var(--border);height:48px}
+.toolbar h2{font-size:14px;font-weight:600;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.toolbar .sep{width:1px;height:20px;background:var(--border)}
+.btn{display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--text);font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;transition:all 0.1s;white-space:nowrap}
+.btn:hover{background:#f3f4f6}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.primary:hover{background:#c0392b}
+.btn.small{padding:4px 8px;font-size:11px}
+/* Split pane */
+.split{display:flex;height:calc(100vh - 48px)}
+.pane{flex:1;overflow-y:auto;position:relative}
+.pane-left{border-right:1px solid var(--border)}
+.pane-header{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:#fff;border-bottom:1px solid var(--border);font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;height:30px;position:sticky;top:0;z-index:2}
+.pane-header .btn{padding:2px 6px;font-size:10px}
+/* Editor */
+.editor{width:100%;height:calc(100% - 30px);border:none;resize:none;padding:16px;font-family:'SF Mono','Fira Code','Consolas',monospace;font-size:13px;line-height:1.6;color:var(--text);background:#fff;outline:none;tab-size:2}
+.editor:focus{background:#fff}
+/* Preview */
+.preview{padding:32px 40px;background:#fff;min-height:100%}
+.preview .markdown-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;line-height:1.7;box-shadow:none!important;padding:0!important}
+.preview .markdown-body h1{font-size:2em;font-weight:700;padding-bottom:.3em;border-bottom:1px solid #d8dee4;margin-bottom:16px}
+.preview .markdown-body h2{font-size:1.5em;font-weight:600;padding-bottom:.3em;border-bottom:1px solid #d8dee4;margin:24px 0 12px}
+.preview .markdown-body pre{background:#f6f8fa;border-radius:6px;padding:16px;overflow-x:auto}
+.preview .markdown-body code{font-family:'SF Mono','Fira Code',monospace;font-size:13px;background:#f6f8fa;padding:2px 6px;border-radius:4px}
+.preview .markdown-body pre code{background:transparent;padding:0;font-size:13px}
+.preview .markdown-body blockquote{border-left:4px solid var(--accent);padding:0 16px;color:var(--muted);margin:16px 0}
+.preview .markdown-body table{border-collapse:collapse;margin:16px 0}
+.preview .markdown-body td,.preview .markdown-body th{padding:6px 13px;border:1px solid #d0d7de}
+/* Responsive: stack panes on mobile */
+@media(max-width:768px){
+  .split{flex-direction:column}
+  .pane-left{flex:0 0 45%;border-right:none;border-bottom:1px solid var(--border)}
+  .preview{padding:20px}
+}
+/* Print */
+@media print{
+  .toolbar,.pane-left,.pane-header{display:none!important}
+  .pane{flex:1;border:none}
+  .pane-right{overflow:visible}
+  .preview{padding:0;box-shadow:none}
+  body{background:#fff}
+}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <h2 id="doc-title">AiScribe PDF Export</h2>
+  <button class="btn small" onclick="insTemplate('summary')">Summary</button>
+  <button class="btn small" onclick="insTemplate('chat')">Chat</button>
+  <span class="sep"></span>
+  <button class="btn small" onclick="fmtBold()" title="Bold">B</button>
+  <button class="btn small" onclick="fmtItalic()" title="Italic"><i>I</i></button>
+  <button class="btn small" onclick="fmtCode()" title="Code">&lt;/&gt;</button>
+  <span class="sep"></span>
+  <button class="btn" onclick="copyMd()">Copy</button>
+  <button class="btn primary" onclick="window.print()">Download PDF</button>
+  <button class="btn" onclick="window.close()">Close</button>
+</div>
+
+<div class="split">
+  <div class="pane pane-left">
+    <div class="pane-header"><span>Markdown</span><button class="btn" onclick="resetMd()">Reset</button></div>
+    <textarea class="editor" id="editor" placeholder="Write markdown here..." oninput="renderPreview()"></textarea>
+  </div>
+  <div class="pane pane-right">
+    <div class="pane-header"><span>Preview</span></div>
+    <div class="preview" id="preview"><div class="markdown-body"><p>Loading...</p></div></div>
+  </div>
+</div>
+
+<script>
+marked.setOptions({breaks:true,gfm:true});
+marked.use({renderer:{code:function(o){var e=o.lang||"";try{var c=hljs.highlight(o.text,{language:e,ignoreIllegal:true}).value;return'<pre><code class="hljs language-'+e+'">'+c+"</code></pre>"}catch(t){return'<pre><code class="hljs">'+o.text+"</code></pre>"}}}});
+
+var editor=document.getElementById("editor"),preview=document.getElementById("preview"),original="";
+
+function renderPreview(){
+  preview.innerHTML='<div class="markdown-body">'+marked.parse(editor.value)+"</div>";
+  localStorage.setItem("aiscribe-pdf-edit",editor.value);
+}
+
+function loadSession(id){
+  fetch("/api/sessions/"+id).then(function(r){return r.json()}).then(function(s){
+    if(s.error){preview.innerHTML="<p>Session not found.</p>";return}
+    document.getElementById("doc-title").textContent=s.branch||"AiScribe Export";
+    var t=buildMarkdown(s);
+    original=t;editor.value=t;
+    renderPreview();
+  }).catch(function(){preview.innerHTML="<p>Could not load session.</p>"});
+}
+
+function buildMarkdown(s){
+  var d=new Date(s.date).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric",hour:"2-digit",minute:"2-digit"});
+  return "# "+(s.number?"#"+s.number+" ":"")+s.branch+"\n\n"+
+    "**Date:** "+d+" · **Files:** "+s.filesChanged+" · **Changes:** +"+s.insertions+" / -"+s.deletions+(s.aiTool?" · **Tool:** "+s.aiTool:"")+"\n\n"+
+    "---\n\n"+(s.summary||"_No summary available._");
+}
+
+function insTemplate(type){
+  if(type==="chat"&&original){var chat=original.split("## Session Conversation")[1];if(chat)editor.value="## Session Conversation\n\n"+chat.trim()}
+  else editor.value=original;
+  renderPreview();
+}
+function fmtBold(){wrapSelection("**","**")}
+function fmtItalic(){wrapSelection("_","_")}
+function fmtCode(){wrapSelection("`","`")}
+function wrapSelection(pre,suf){var e=editor,t=e.selectionStart,n=e.selectionEnd,v=e.value;e.value=v.substring(0,t)+pre+v.substring(t,n)+suf+v.substring(n);e.focus();e.selectionStart=t+pre.length;e.selectionEnd=n+pre.length;renderPreview()}
+function copyMd(){navigator.clipboard.writeText(editor.value);alert("Copied to clipboard")}
+function resetMd(){if(original)editor.value=original;renderPreview()}
+
+var id=new URLSearchParams(window.location.search).get("id");
+if(id)loadSession(id);else{editor.value="# New Document\n\nStart writing...";renderPreview()}
+</script>
+</body>
+</html>
