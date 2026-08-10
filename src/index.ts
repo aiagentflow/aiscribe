@@ -105,8 +105,7 @@ async function ensureConfig(): Promise<void> {
   if (hasEnvConfig()) return;
   const saved = loadConfig();
   if (saved) { applyConfig(saved); return; }
-  const cfg = await runOnboarding();
-  applyConfig(cfg);
+  // No config? Don't block. Let log.ts handle fallback.
 }
 
 function ensureConfigOrWarn(): void {

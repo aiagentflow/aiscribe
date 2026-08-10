@@ -1,7 +1,7 @@
 ---
 id: TASK-26
 title: 'Simplify user journey: one-command setup and clear flow'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-08 13:53'
 labels: []
@@ -17,9 +17,9 @@ Current journey is fragmented. aiscribe setup generates files but doesn't start 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 aiscribe setup --docker starts Docker containers automatically
-- [ ] #2 aiscribe server auto-loads all existing .aiscribe sessions on startup
-- [ ] #3 aiscribe log shows where session was saved and how to view it
+- [x] #1 aiscribe setup --docker starts Docker containers automatically
+- [x] #2 aiscribe server auto-loads all existing .aiscribe sessions on startup
+- [x] #3 aiscribe log shows where session was saved and how to view it
 - [ ] #4 First-run experience: guided flow from install to first session
 - [ ] #5 Document the three paths: file-only, server-only, Docker+DB
 <!-- AC:END -->

@@ -4,6 +4,7 @@ import { SYSTEM_PROMPT, buildUserPrompt } from "../prompt";
 import { saveSession } from "../storage";
 import { captureContext, formatContextForPrompt, readPiFullTranscript } from "../context/capture";
 import { writeContextFile } from "./context";
+import { hasEnvConfig, loadConfig, applyConfig } from "../onboarding";
 import * as path from "path";
 import {
   bold, dim, green, cyan, yellow, gray, red,
@@ -28,6 +29,9 @@ export async function log(args: string[]): Promise<void> {
   const isJson = args.includes("--json");
   const isQuiet = args.includes("--quiet") || args.includes("-q");
   const isFull = args.includes("--full") || args.includes("-f");
+  const hasKey = hasEnvConfig() || !!loadConfig();
+  // Auto-fallback: no API key? use full mode without LLM summary
+  let effectiveFull = isFull || !hasKey;
   const cmdName = "log";
 
   // --name flag: custom session name
@@ -120,7 +124,7 @@ export async function log(args: string[]): Promise<void> {
       return;
     }
 
-    const summary = isFull
+    const summary = effectiveFull
       ? buildFullSummary(branch, diff, contextSection)
       : await generateSummary(SYSTEM_PROMPT, fullUserPrompt);
 
@@ -159,7 +163,7 @@ export async function log(args: string[]): Promise<void> {
       }
     }
 
-    if (spinner) spinner.stop(isFull ? "Session captured" : "Summary generated");
+    if (spinner) spinner.stop(effectiveFull ? "Session captured" : "Summary generated");
 
     // 4. Generate embedding
     let hasEmbedding = false;
@@ -235,6 +239,10 @@ export async function log(args: string[]): Promise<void> {
       console.log("");
       console.log(dim("  View: ") + "cat " + filepath);
       console.log(dim("  Web:  ") + "aiscribe server");
+      if (!hasKey && !isFull) {
+        console.log("");
+        console.log(dim("  Tip: ") + "Run " + cyan("aiscribe setup --reconfigure") + dim(" to add an LLM for AI summaries."));
+      }
       console.log("");
     } else {
       // Quiet mode: just print the file path
