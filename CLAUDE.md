@@ -38,11 +38,12 @@ Commands: `log`, `search`, `hotspots`, `history`, `doctor`, `status`, `watch`,
 `context`, `sync`, `export`, `setup` (`--reconfigure` to change provider/key),
 `server`.
 
-Config resolution order, used by `ensureConfig()`/`ensureConfigOrWarn()` in
-`index.ts`: env vars (`hasEnvConfig()`) → saved `~/.aiscribe/config.json`
-(`loadConfig()`) → interactive `runOnboarding()`. `log` requires config and
-will onboard if missing; `search`/`server` warn and degrade instead of
-blocking (keyword search / no embeddings).
+Config resolution order, in `index.ts`: env vars (`hasEnvConfig()`) → saved
+`~/.aiscribe/config.json` (`loadConfig()`). Both `log` (`ensureConfig()`) and
+`search`/`server` (`ensureConfigOrWarn()`) degrade instead of blocking when no
+key is found: `log` falls back to `--full` mode (raw capture, no LLM summary),
+`search` does keyword-only, `server` runs without embeddings. Interactive
+`runOnboarding()` is reached only via `aiscribe setup --reconfigure`.
 
 ```
 aiscribe/
