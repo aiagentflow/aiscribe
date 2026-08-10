@@ -19,9 +19,9 @@
 
 ---
 
-**AIScribe** is a CLI tool that journals every AI coding session into a structured, searchable log. Captures git diffs and AI conversations. Exports as training data so you can fine-tune your own LLM. One command after every session and you never lose context again.
+**AIScribe** is a CLI tool that journals every AI coding session into a structured, searchable log. Zero config, works offline. Captures git diffs and full AI conversations. Exports as training data to fine-tune your own LLM. Built-in web UI with PDF export and markdown editor. One command.
 
-Works with Claude Code, Cursor, Codex, Aider, Windsurf, or any AI coding tool — it reads your git diff.
+Works with pi, Claude Code, Cursor, Codex, Aider, Windsurf, or any AI coding tool.
 
 Part of the [aiagentflow](https://aiagentflow.dev) suite.
 
@@ -57,7 +57,19 @@ No onboarding. No API key required. Works out of the box. Add an LLM later for A
   <img src="assets/demos/demo-analytics.gif" alt="aiscribe hotspots demo" width="600">
 </p>
 
-## What You Get
+## Features
+
+- Zero config: `aiscribe log` works immediately, no API key needed
+- Full conversation capture: prompts, responses, tool calls, files read, commands run
+- Chat-style formatting in session logs with role-based sections
+- Built-in web UI (`aiscribe server`): search, download, copy, PDF export
+- Side-by-side markdown editor with live preview and PDF export (`/pdf.html`)
+- Session numbering, download .md, download all as tar.gz
+- Semantic search with vector embeddings (API key required)
+- Git remote backup: auto-push sessions to private repo
+- Session watch: auto-detect completed pi and Claude Code sessions
+- 13 commands, all with `--json` flag and colored output
+- Interactive arrow-key provider selector for configuration
 
 Every session is saved as a markdown file you can export as training data:
 
