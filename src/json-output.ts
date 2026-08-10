@@ -1,7 +1,7 @@
 // JSON output helper with syntax coloring (like jq)
 // All commands use this when --json flag is passed
 
-import { green, blue, cyan, yellow, gray, style } from "./terminal";
+import { green, cyan, yellow, gray, style } from "./terminal";
 
 export interface JSONOutput {
   ok: boolean;
