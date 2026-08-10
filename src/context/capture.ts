@@ -55,6 +55,13 @@ function getPiSessionsDir(): string {
   return path.join(os.homedir(), ".pi", "agent", "sessions");
 }
 
+// pi encodes a project path as its session directory name by replacing "/"
+// with "-" and wrapping in "--". Matching on this encoded form is lossless,
+// unlike decoding (which can't tell "build-boost" from "build/boost").
+function encodePiDir(cwd: string): string {
+  return "--" + cwd.replace(/^\//, "").replace(/\//g, "-") + "--";
+}
+
 async function readPiHistory(cwd: string): Promise<CapturedPrompt[]> {
   const prompts: CapturedPrompt[] = [];
   const sessionFile = getPiSessionFile();
@@ -76,13 +83,10 @@ async function readPiHistory(cwd: string): Promise<CapturedPrompt[]> {
   const dirs = fs.readdirSync(sessionsDir, { withFileTypes: true })
     .filter((d) => d.isDirectory());
 
-  // First: exact cwd match
+  // First: exact match on the encoded cwd
+  const encoded = encodePiDir(cwd);
   for (const dir of dirs) {
-    const decoded = dir.name
-      .replace(/^--/, "")
-      .replace(/--$/, "")
-      .replace(/-/g, "/");
-    if (cwd === decoded) { matchingDir = path.join(sessionsDir, dir.name); break; }
+    if (dir.name === encoded) { matchingDir = path.join(sessionsDir, dir.name); break; }
   }
 
   // Second: project name match (for different terminals)
@@ -317,9 +321,9 @@ export function readPiFullTranscript(cwd: string): FullTranscript | null {
       .filter((d) => d.isDirectory());
 
     let matchingDir: string | null = null;
+    const encoded = encodePiDir(cwd);
     for (const dir of dirs) {
-      const decoded = dir.name.replace(/^--/, "").replace(/--$/, "").replace(/-/g, "/");
-      if (cwd === decoded) { matchingDir = path.join(sessionsDir, dir.name); break; }
+      if (dir.name === encoded) { matchingDir = path.join(sessionsDir, dir.name); break; }
     }
     if (!matchingDir) {
       for (const dir of dirs) {

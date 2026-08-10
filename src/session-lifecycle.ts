@@ -15,6 +15,14 @@ export interface AgentSession {
   startedAt: number;
   updatedAt: number;
   prompts: string[];
+  rawDir?: string; // pi session directory name (encoded project path)
+}
+
+// pi encodes a project path as "/" -> "-" wrapped in "--". Matching on this
+// encoded form is lossless, unlike decoding (which can't tell "build-boost"
+// from "build/boost").
+function encodeProjectDir(cwd: string): string {
+  return "--" + cwd.replace(/^\//, "").replace(/\//g, "-") + "--";
 }
 
 export interface SessionStatus {
@@ -81,6 +89,7 @@ function readPiSessions(): AgentSession[] {
           startedAt: entry.timestamp ? new Date(entry.timestamp).getTime() : stat.birthtimeMs,
           updatedAt: stat.mtimeMs,
           prompts: [],
+          rawDir: dir.name,
         });
       } catch {}
     }
@@ -153,12 +162,21 @@ function readClaudePrompts(cwd: string): string[] {
 // Get sessions for the current project directory
 export function getCurrentProjectSessions(): AgentSession[] {
   const cwd = process.cwd();
+  const encoded = encodeProjectDir(cwd);
   const allSessions = [...readClaudeSessions(), ...readPiSessions()];
 
   return allSessions
-    .filter((s) => s.cwd === cwd || cwd.startsWith(s.cwd) || s.cwd.startsWith(cwd))
+    .filter((s) => {
+      // pi: match exactly on the encoded project dir (lossless).
+      if (s.tool === "pi") return s.rawDir === encoded;
+      // claude: cwd is stored verbatim, so subpath matching is safe.
+      return s.cwd === cwd || cwd.startsWith(s.cwd) || s.cwd.startsWith(cwd);
+    })
     .map((s) => ({
       ...s,
+      // For pi, the decoded display path is lossy; use the real cwd.
+      cwd: s.tool === "pi" ? cwd : s.cwd,
+      name: s.tool === "pi" ? `pi-${path.basename(cwd)}` : s.name,
       prompts: s.tool === "claude-code" ? readClaudePrompts(s.cwd) : [],
     }))
     .sort((a, b) => b.updatedAt - a.updatedAt);
