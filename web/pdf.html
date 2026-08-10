@@ -64,6 +64,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <button class="btn small" onclick="insTemplate('summary')">Summary</button>
   <button class="btn small" onclick="insTemplate('chat')">Chat</button>
   <span class="sep"></span>
+  <button class="btn small" onclick="setView('split')" id="btn-split" style="background:#f0f0f0">Split</button>
+  <button class="btn small" onclick="setView('editor')" id="btn-editor">Editor</button>
+  <button class="btn small" onclick="setView('preview')" id="btn-preview">Preview</button>
   <button class="btn small" onclick="fmtBold()" title="Bold">B</button>
   <button class="btn small" onclick="fmtItalic()" title="Italic"><i>I</i></button>
   <button class="btn small" onclick="fmtCode()" title="Code">&lt;/&gt;</button>
@@ -112,6 +115,7 @@ function buildMarkdown(s){
     "---\n\n"+(s.summary||"_No summary available._");
 }
 
+function setView(mode){var left=document.querySelector(".pane-left"),right=document.querySelector(".pane-right");document.querySelectorAll("#btn-split,#btn-editor,#btn-preview").forEach(function(b){b.style.background=""});document.getElementById("btn-"+mode).style.background="#f0f0f0";if(mode==="split"){left.style.display="";right.style.display=""}else if(mode==="editor"){left.style.display="";right.style.display="none";left.style.flex="1"}else{left.style.display="none";right.style.display="";right.style.flex="1"}localStorage.setItem("aiscribe-pdf-view",mode)}function loadView(){var m=localStorage.getItem("aiscribe-pdf-view")||"split";setView(m)}
 function insTemplate(type){
   if(type==="chat"&&original){var chat=original.split("## Session Conversation")[1];if(chat)editor.value="## Session Conversation\n\n"+chat.trim()}
   else editor.value=original;
@@ -125,7 +129,7 @@ function copyMd(){navigator.clipboard.writeText(editor.value);alert("Copied to c
 function resetMd(){if(original)editor.value=original;renderPreview()}
 
 var id=new URLSearchParams(window.location.search).get("id");
-if(id)loadSession(id);else{editor.value="# New Document\n\nStart writing...";renderPreview()}
+if(id)loadSession(id);loadView();else{editor.value="# New Document\n\nStart writing...";renderPreview()}
 </script>
 </body>
 </html>
