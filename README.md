@@ -30,15 +30,15 @@ Part of the [aiagentflow](https://aiagentflow.dev) suite.
 ```bash
 npm install -g aiscribe
 
-# First run: pick your LLM provider and paste API key
+# Zero config. Just run.
 cd /your/project
 aiscribe log
 
-# With conversation capture (pi, Claude Code, Codex, Aider)
+# Capture full AI conversations
 aiscribe log -c -n "my-feature"
 ```
 
-On first run, AIScribe asks you to select an LLM provider and enter your API key. Config is saved to `~/.aiscribe/config.json` and never asked again.
+No onboarding. No API key required. Works out of the box. Add an LLM later for AI summaries with `aiscribe setup --reconfigure`.
 
 ## Demos
 
