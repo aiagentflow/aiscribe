@@ -4,7 +4,7 @@ import { SYSTEM_PROMPT, buildUserPrompt } from "../prompt";
 import { saveSession } from "../storage";
 import { captureContext, formatContextForPrompt, readPiFullTranscript } from "../context/capture";
 import { writeContextFile } from "./context";
-import { hasEnvConfig, loadConfig, applyConfig } from "../onboarding";
+import { hasEnvConfig, loadConfig } from "../onboarding";
 import * as path from "path";
 import {
   bold, dim, green, cyan, yellow, gray, red,

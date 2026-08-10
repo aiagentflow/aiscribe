@@ -1,16 +1,28 @@
 import { loadIndex } from "../storage";
 import { detectHotspots, fileTimeline, detectRiskPatterns } from "../patterns";
 import { bold, dim, green, yellow, red, gray, cyan } from "../terminal";
+import { jsonSuccess } from "../json-output";
+import * as path from "path";
 
 export async function hotspots(args: string[]): Promise<void> {
+  const isJson = args.includes("--json");
   const index = loadIndex();
   if (index.sessions.length === 0) {
-    console.log(gray("\n  No sessions found. Run 'aiscribe log' first.\n"));
+    if (isJson) jsonSuccess("hotspots", []);
+    else console.log(gray("\n  No sessions found. Run 'aiscribe log' first.\n"));
+    return;
+ }
+
+  const topK = parseInt(args.filter(a => a !== "--json")[0]) || 10;
+  const hot = detectHotspots(index.sessions, topK);
+
+  if (isJson) {
+    jsonSuccess("hotspots", hot.map(h => ({
+      file: h.file, sessions: h.sessions, totalChanges: h.totalChanges,
+      lastChanged: h.lastChanged,
+    })));
     return;
   }
-
-  const topK = parseInt(args[0]) || 10;
-  const hot = detectHotspots(index.sessions, topK);
 
   if (hot.length === 0) {
     console.log(gray("\n  No file patterns detected yet. More sessions needed.\n"));
@@ -62,9 +74,12 @@ export async function hotspots(args: string[]): Promise<void> {
 }
 
 export async function history(args: string[]): Promise<void> {
-  const filePath = args.join(" ").trim();
+  const isJson = args.includes("--json");
+  const filterArgs = args.filter(a => a !== "--json");
+  const filePath = filterArgs.join(" ").trim();
 
   if (!filePath) {
+    if (isJson) { jsonSuccess("history", { error: "No file path provided" }); return; }
     console.log(`
 ${bold("aiscribe history <file>")}
 
@@ -79,14 +94,21 @@ Examples:
 
   const index = loadIndex();
   if (index.sessions.length === 0) {
-    console.log(gray("\n  No sessions found.\n"));
+    if (isJson) jsonSuccess("history", []);
+    else console.log(gray("\n  No sessions found.\n"));
     return;
   }
 
   const timeline = fileTimeline(filePath, index.sessions);
 
   if (timeline.length === 0) {
-    console.log(gray(`\n  No sessions touched "${filePath}".\n`));
+    if (isJson) jsonSuccess("history", []);
+    else console.log(gray(`\n  No sessions touched "${filePath}".\n`));
+    return;
+  }
+
+  if (isJson) {
+    jsonSuccess("history", { file: filePath, sessions: timeline, total: index.sessions.length });
     return;
   }
 
