@@ -3,3 +3,5 @@ dist/
 .aiscribe/
 .env
 *.log
+# NTFS fuse artifacts
+scripts/
