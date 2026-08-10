@@ -80,25 +80,51 @@ export async function log(args: string[]): Promise<void> {
     let contextPromptCount = 0;
     let fullTranscript: import("../context/capture").FullTranscript | null = null;
 
+    // Date range for context capture
+    const sinceArg = getFlagValue(args, "--since");
+    let sinceDate: Date | null = null;
+    if (sinceArg) {
+      sinceDate = parseDateRange(sinceArg);
+    } else if (withContext && !isQuiet && !isJson && process.stdin.isTTY) {
+      sinceDate = await askDateRange();
+    } else {
+      sinceDate = parseDateRange("today"); // Default: today only
+    }
+
     if (withContext) {
       if (!isQuiet && !isJson) console.log(boxMid("context"));
       const cwd = process.cwd();
       const context = await captureContext(cwd);
 
+      // Filter prompts by date range
+      if (sinceDate) {
+        const cutoff = sinceDate.getTime();
+        context.prompts = context.prompts.filter(p => p.timestamp >= cutoff);
+        context.sessionCount = new Set(context.prompts.map(p => p.sessionId)).size;
+        context.fullContext = context.prompts.map(p => `[${new Date(p.timestamp).toISOString().split("T")[0]}] ${p.text}`).join("\n");
+        contextSection = formatContextForPrompt(context);
+      } else {
+        contextSection = formatContextForPrompt(context);
+      }
+
       contextTool = context.tool;
       contextSessionCount = context.sessionCount;
       contextPromptCount = context.prompts.length;
-      contextSection = formatContextForPrompt(context);
 
-      // Capture full transcript if available (pi sessions)
+      // Capture full transcript if available (pi sessions), filtered by date
       try {
         fullTranscript = readPiFullTranscript(cwd);
+        if (fullTranscript && sinceDate) {
+          const cutoff = sinceDate.getTime();
+          fullTranscript.messages = fullTranscript.messages.filter(m => m.timestamp >= cutoff);
+        }
       } catch {}
 
       if (!isQuiet && !isJson) {
         console.log(boxLine("Tool", contextTool || gray("none detected")));
         console.log(boxLine("Sessions", String(contextSessionCount)));
         console.log(boxLine("Prompts", String(contextPromptCount)));
+        if (sinceDate) console.log(boxLine("Since", sinceDate.toISOString().split("T")[0]));
       }
     }
 
@@ -264,6 +290,44 @@ export async function log(args: string[]): Promise<void> {
 function getFlagValue(args: string[], flag: string): string | undefined {
   const idx = args.indexOf(flag);
   return idx >= 0 && idx + 1 < args.length ? args[idx + 1] : undefined;
+}
+
+function parseDateRange(input: string): Date | null {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const t = input.toLowerCase().trim();
+  if (t === "today") return now;
+  if (t === "yesterday" || t === "yday") { const d = new Date(now); d.setDate(d.getDate() - 1); return d; }
+  if (t === "week" || t === "last week" || t === "7") { const d = new Date(now); d.setDate(d.getDate() - 7); return d; }
+  if (t === "month" || t === "last month" || t === "30") { const d = new Date(now); d.setDate(d.getDate() - 30); return d; }
+  if (t === "all" || t === "*") return null; // No filter
+  // Try parse YYYY-MM-DD
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t);
+  if (m) return new Date(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3]));
+  // Default: today
+  return now;
+}
+
+async function askDateRange(): Promise<Date> {
+  const rl = (await import("readline")).createInterface({ input: process.stdin, output: process.stdout });
+  console.log("");
+  console.log(dim("  How far back should we capture conversation context?"));
+  console.log(dim("  [1] Today  [2] Yesterday  [3] Last 7 days  [4] Last 30 days  [5] All"));
+  console.log(dim("  Or type a date: 2026-08-11"));
+
+  return new Promise((resolve) => {
+    rl.question(dim("  Select [1-5] or date: "), (answer) => {
+      rl.close();
+      const a = answer.trim();
+      if (a === "1") resolve(parseDateRange("today")!);
+      else if (a === "2") resolve(parseDateRange("yesterday")!);
+      else if (a === "3") resolve(parseDateRange("week")!);
+      else if (a === "4") resolve(parseDateRange("month")!);
+      else if (a === "5") resolve(parseDateRange("all")!);
+      else if (a) resolve(parseDateRange(a) || parseDateRange("today")!);
+      else resolve(parseDateRange("today")!);
+    });
+  });
 }
 
 function buildFullSummary(
