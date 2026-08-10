@@ -1,0 +1,10 @@
+{"version": 2, "width": 80, "height": 24, "timestamp": 1786280284, "env": {"SHELL": "/usr/bin/zsh", "TERM": "xterm-ghostty"}}
+[0.006385, "o", "\u001b[H\u001b[2J\u001b[3J"]
+[0.007879, "o", "\r\n\r\n  AIScribe — aiscribe log demo\r\n  Journal your AI coding session\r\n\r\n"]
+[1.509648, "o", "$ ls .aiscribe/sessions/ | wc -l\r\n"]
+[1.511529, "o", "6\r\n"]
+[1.511745, "o", "  existing sessions\r\n"]
+[2.513359, "o", "\r\n$ echo \"## FAQ\" >> README.md\r\n"]
+[3.015473, "o", "\r\n$ git diff --stat\r\n"]
+[3.021296, "o", "\u001b[?1049h\u001b[?1h\u001b=\r"]
+[3.03164, "o", " README.md                   |  1 \u001b[32m+\u001b[m\u001b[m\r\n assets/terminal-preview.svg | 14 \u001b[32m++++\u001b[m\u001b[31m----\u001b[m\u001b[m\r\n docs/CLI.md                 | 49 \u001b[32m++++++++++++++++++++++++\u001b[m\u001b[31m--\u001b[m\u001b[m\r\n llms.txt                    |  6 \u001b[32m++\u001b[m\u001b[31m--\u001b[m\u001b[m\r\n package-lock.json           |  4 \u001b[32m+\u001b[m\u001b[31m--\u001b[m\u001b[m\r\n package.json                |  9 \u001b[32m+++\u001b[m\u001b[31m--\u001b[m\u001b[m\r\n web/landing.html            | 83 \u001b[32m+++++++++++++++++++++++++++++++++++++\u001b[m\u001b[31m--------\u001b[m\u001b[m\r\n 7 files changed, 136 insertions(+), 30 deletions(-)\u001b[m\r\n\u001b[7m(END)\u001b[27m\u001b[K"]

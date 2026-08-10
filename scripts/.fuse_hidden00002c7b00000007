@@ -1,0 +1,42 @@
+#!/bin/bash
+# Demo: aiscribe log - journal a session
+set -e
+cd /media/raj/Work1/aiscribe
+export GIT_PAGER=cat
+export PAGER=cat
+
+clear
+cat << 'BANNER'
+
+
+  AIScribe — aiscribe log demo
+  Journal your AI coding session
+
+BANNER
+sleep 1.5
+
+echo '$ ls .aiscribe/sessions/ | wc -l'
+ls .aiscribe/sessions/ | wc -l
+echo "  existing sessions"
+sleep 1
+
+echo ''
+echo '$ echo "## FAQ" >> README.md'
+echo "## FAQ" >> README.md
+sleep 0.5
+
+echo ''
+echo '$ git --no-pager diff --stat'
+git --no-pager diff --stat
+sleep 1.5
+
+echo ''
+echo '$ aiscribe log -n "add-faq-section"'
+aiscribe log -n "add-faq-section" 2>&1
+sleep 1.5
+
+git checkout -- README.md 2>/dev/null
+
+echo ''
+echo '  Done! Session saved in .aiscribe/sessions/'
+sleep 1.5

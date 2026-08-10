@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#58a6ff"/>
+      <stop offset="100%" stop-color="#3fb950"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#58a6ff"/>
+      <stop offset="100%" stop-color="#3fb950"/>
+    </linearGradient>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#161b22"/>
+      <stop offset="100%" stop-color="#0d1117"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <rect x="12" y="12" width="488" height="488" rx="102" fill="none" stroke="url(#g)" stroke-width="5" opacity="0.3"/>
+
+  <!-- Abstract S-wave / scribe mark -->
+  <path d="M140 360 Q140 200 256 180 Q370 160 370 290 Q370 420 256 400 Q140 380 140 240" 
+        fill="none" stroke="url(#g)" stroke-width="28" stroke-linecap="round" opacity="0.15"/>
+  <path d="M140 360 Q140 200 256 180 Q370 160 370 290 Q370 420 256 400 Q140 380 140 240" 
+        fill="none" stroke="url(#g)" stroke-width="8" stroke-linecap="round"/>
+
+  <!-- Pen nib at the end -->
+  <polygon points="135,235 115,255 140,258" fill="#3fb950" opacity="0.9"/>
+
+  <!-- Recording dots along the wave -->
+  <circle cx="256" cy="180" r="5" fill="#58a6ff" opacity="0.6"/>
+  <circle cx="370" cy="290" r="5" fill="#58a6ff" opacity="0.6"/>
+  <circle cx="256" cy="400" r="5" fill="#58a6ff" opacity="0.6"/>
+
+  <!-- Pulse ring -->
+  <circle cx="370" cy="290" r="28" stroke="#3fb950" stroke-width="2" opacity="0.3">
+    <animate attributeName="r" values="28;50" dur="2s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.3;0" dur="2s" repeatCount="indefinite"/>
+  </circle>
+
+  <text x="256" y="450" font-family="system-ui,sans-serif" font-weight="800" font-size="40" fill="#f0f6fc" text-anchor="middle" letter-spacing="3">AISCRIBE</text>
+</svg>
