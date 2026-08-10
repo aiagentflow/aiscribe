@@ -127,6 +127,13 @@ function selectProvider(rl: readline.Interface): Promise<number> {
 }
 
 export async function runOnboarding(): Promise<SavedConfig> {
+  if (!process.stdin.isTTY) {
+    throw new Error(
+      "Interactive setup needs a terminal.\n" +
+      "Set AISCRIBE_API_KEY (and optionally AISCRIBE_PROVIDER), or use AISCRIBE_PROVIDER=ollama."
+    );
+  }
+
   console.log(`
   Welcome to AIScribe!
 

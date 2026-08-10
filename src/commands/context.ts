@@ -20,8 +20,9 @@ interface SessionSummary {
 }
 
 export async function context(args: string[]): Promise<void> {
-  const isJson = args.includes("--json");
-  const isPlain = args.includes("--format") && args[args.indexOf("--format") + 1] === "plain";
+  const formatVal = args.includes("--format") ? args[args.indexOf("--format") + 1] : undefined;
+  const isJson = args.includes("--json") || formatVal === "json";
+  const isPlain = formatVal === "plain";
   const lastN = getFlagValue(args, "--last") || 5;
 
   const index = loadIndex();
