@@ -135,31 +135,31 @@ export async function log(args: string[]): Promise<void> {
       fullSummary += contextSection;
     }
 
-    // Append full transcript (files read, commands run) from pi
+    // Append full transcript as clean chat conversation
     if (fullTranscript && fullTranscript.messages.length > 0) {
-      fullSummary += "\n\n## Full Session Transcript\n\n";
-      fullSummary += `Total messages: ${fullTranscript.messages.length}\n\n`;
+      fullSummary += "\n\n## Session Conversation\n\n";
 
       if (fullTranscript.filesRead.length > 0) {
-        fullSummary += "### Files Read\n\n";
-        for (const f of fullTranscript.filesRead) {
-          fullSummary += `- \`${f}\`\n`;
-        }
-        fullSummary += "\n";
+        fullSummary += "**Files read:** ";
+        fullSummary += fullTranscript.filesRead.map(f => "`" + f.replace(process.cwd(), "") + "`").join(", ");
+        fullSummary += "\n\n";
       }
-
       if (fullTranscript.commandsRun.length > 0) {
-        fullSummary += "### Commands Run\n\n";
-        for (const c of fullTranscript.commandsRun) {
-          fullSummary += `- \`${c}\`\n`;
-        }
-        fullSummary += "\n";
+        fullSummary += "**Commands run:** ";
+        fullSummary += fullTranscript.commandsRun.map(c => "`" + c.slice(0, 80) + "`").join(", ");
+        fullSummary += "\n\n";
       }
 
-      fullSummary += "### Conversation\n\n";
+      fullSummary += "---\n\n";
       for (const msg of fullTranscript.messages) {
-        const prefix = msg.role === "user" ? "**You**" : msg.role === "assistant" ? "**Assistant**" : `**Tool (${msg.toolName || "unknown"})**`;
-        fullSummary += `${prefix}: ${msg.content.slice(0, 500)}\n\n`;
+        const time = new Date(msg.timestamp).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+        if (msg.role === "user") {
+          fullSummary += `<div class="chat-user">\n\n**You** _${time}_\n\n${msg.content.slice(0, 800)}\n\n</div>\n\n`;
+        } else if (msg.role === "assistant") {
+          fullSummary += `<div class="chat-assistant">\n\n**AiScribe** _${time}_\n\n${msg.content.slice(0, 800)}\n\n</div>\n\n`;
+        } else {
+          fullSummary += `<div class="chat-tool">\n\n_${msg.toolName || "tool"}_ _${time}_\n\n\`\`\`\n${msg.content.slice(0, 500)}\n\`\`\`\n\n</div>\n\n`;
+        }
       }
     }
 

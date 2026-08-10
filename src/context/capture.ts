@@ -461,10 +461,20 @@ export async function captureContext(cwd: string): Promise<ContextResult> {
 export function formatContextForPrompt(context: ContextResult): string {
   if (context.prompts.length === 0) return "";
 
-  let output = "\n## Conversation Context\n";
+  let output = "\n## Session Conversation\n\n";
   output += `AI tool: ${context.tool || "unknown"}\n`;
-  output += `Sessions detected: ${context.sessionCount}\n`;
-  output += `Recent prompts and actions:\n`;
-  output += context.fullContext;
+  output += `Total prompts captured: ${context.prompts.length}\n\n`;
+  output += "---\n\n";
+  for (const p of context.prompts) {
+    const d = new Date(p.timestamp).toISOString().split("T")[0];
+    const time = new Date(p.timestamp).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+    if (p.text.startsWith("[thinking]")) {
+      output += `> _Thinking (${d} ${time})_\n> ${p.text.replace("[thinking] ", "").slice(0, 500)}\n\n`;
+    } else if (p.text.startsWith("[tool:")) {
+      output += `> _Tool (${d} ${time})_\n> \`${p.text.replace("[tool:", "").slice(0, 300)}\`\n\n`;
+    } else {
+      output += `**You** _${d} ${time}_\n\n${p.text.slice(0, 500)}\n\n`;
+    }
+  }
   return output;
 }
