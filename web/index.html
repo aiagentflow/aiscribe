@@ -96,7 +96,13 @@ body{font-family:'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 .detail-body ul,.detail-body ol{padding-left:1.5rem;margin:10px 0}
 .detail-body li{margin:4px 0}
 .detail-body blockquote{border-left:3px solid var(--coral);padding-left:16px;margin:14px 0;color:var(--fg-2)}
-/* Chat bubbles */
+/* Scroll to top */
+.scroll-top{position:fixed;bottom:24px;right:24px;width:40px;height:40px;border-radius:12px;background:var(--bg-card);border:1px solid var(--line);color:var(--fg-2);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:40;opacity:0;transform:translateY(10px);transition:all 0.2s;box-shadow:0 4px 16px rgba(0,0,0,0.4)}
+.scroll-top.visible{opacity:1;transform:translateY(0)}
+.scroll-top:hover{background:var(--coral-glow);border-color:rgba(255,99,84,0.2);color:var(--coral-light)}
+/* Sticky detail nav */
+.detail-nav-sticky{position:sticky;top:56px;z-index:20;background:rgba(13,17,23,0.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding:12px 0;margin:-24px -24px 24px}
+.detail-nav-sticky .container{display:flex;align-items:center;justify-content:space-between}
 .chat-user{background:var(--coral-glow);border:1px solid rgba(255,99,84,0.15);border-radius:12px;padding:14px 18px;margin:12px 0}
 .chat-user strong{color:var(--coral-light)}
 .chat-user em{font-size:11px;color:var(--fg-3);margin-left:8px;font-style:normal}
@@ -198,16 +204,26 @@ color:var(--coral-light);font-size:13px;border:1px solid var(--line)}
 
   <!-- DETAIL VIEW -->
   <div class="detail-view" id="detail-view">
-    <div class="container">
-      <div class="detail-nav">
+    <div class="detail-nav-sticky" id="detail-nav-sticky" style="display:none">
+      <div class="container">
         <button class="back-btn" onclick="showList()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
           Back to sessions
         </button>
+        <button class="back-btn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Scroll to top">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+          Top
+        </button>
       </div>
+    </div>
+    <div class="container">
       <div id="detail-content"></div>
     </div>
   </div>
+
+  <button class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+  </button>
 
   <!-- Footer -->
   <div class="footer">
@@ -306,6 +322,8 @@ function showSession(id){
     if(s.error){document.getElementById("detail-content").innerHTML='<p>Session not found.</p>';return}
     document.getElementById("list-view").style.display="none";
     document.getElementById("detail-view").classList.add("active");
+    document.getElementById("detail-nav-sticky").style.display="block";
+    document.getElementById("scrollTop").classList.add("visible");
     var d=new Date(s.date).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric",hour:"2-digit",minute:"2-digit"});
     var meta='<div class="detail-card"><h1>'+(s.number?'#'+s.number+' ':'')+esc(s.branch)+'</h1>'+
       '<div class="detail-meta-row"><span>'+d+'</span><span class="sep">·</span><span>'+s.filesChanged+' files</span><span class="sep">·</span><span>+'+s.insertions+' / -'+s.deletions+'</span>'+
@@ -321,8 +339,16 @@ function showSession(id){
 function showList(){
   document.getElementById("list-view").style.display="block";
   document.getElementById("detail-view").classList.remove("active");
+  document.getElementById("detail-nav-sticky").style.display="none";
+  document.getElementById("scrollTop").classList.remove("visible");
   window.scrollTo({top:0,behavior:"smooth"});
 }
+
+// Scroll to top button visibility
+window.addEventListener("scroll",function(){
+  var btn=document.getElementById("scrollTop");
+  if(window.scrollY>400)btn.classList.add("visible");else btn.classList.remove("visible");
+});
 
 function md(t){
   return t
