@@ -219,7 +219,7 @@ function showLogHelp() {
     -c, --with-context    Capture AI tool conversation history
     -f, --full            Store raw conversation without LLM summary
     -n, --name <name>     Custom session name for the journal entry
-    --since <when>        Capture context since: today, yesterday, week, 2026-08-11
+    --since <when>        Capture context since: today, yesterday, week, YYYY-MM-DD
     --json                Output as JSON
     --quiet, -q           Suppress progress output
     -h, --help            Show this help

@@ -409,7 +409,9 @@ async function askDateRange(): Promise<{ date: Date; batchMode: string; batchLin
   console.log("");
   console.log(dim("  Capture conversation context since?"));
   console.log(dim("  [1] Today  [2] Yesterday  [3] This week  [4] Last week  [5] All"));
-  console.log(dim("  Or type: 2026-08-11"));
+  const today = new Date().toISOString().split("T")[0];
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+  console.log(dim(`  Or type a date like ${yesterday} or ${today}`));
 
   const date = await new Promise<Date>((resolve) => {
     rl.question(dim("  Select [1-5] or date: "), (a) => {
