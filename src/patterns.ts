@@ -115,7 +115,7 @@ export function detectRiskPatterns(
   if (configChanges.length > 0) {
     patterns.push({
       pattern: "config-mutations",
-      description: "Config/env files changed without related code changes",
+      description: "Sessions that modified config/env files",
       count: configChanges.length,
       sessions: configChanges,
     });

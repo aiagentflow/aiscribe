@@ -116,7 +116,8 @@ export async function pushSession(sessionFile: string, projectName: string): Pro
     execSync("git add -A", { cwd: REMOTE_DIR, stdio: "pipe" });
     
     const date = new Date().toISOString().split("T")[0];
-    const branch = path.basename(sessionFile, ".md").split("-").slice(3).join("-") || "session";
+    // Filename is YYYY-MM-DD-HHMM-slug; drop the date + time to recover the name.
+    const branch = path.basename(sessionFile, ".md").split("-").slice(4).join("-") || "session";
     execSync(`git commit -m "[${projectName}] ${branch} - ${date}" --allow-empty`, {
       cwd: REMOTE_DIR, stdio: "pipe",
     });

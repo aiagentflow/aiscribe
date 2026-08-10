@@ -36,6 +36,13 @@ export function buildUserPrompt(
     return `Session: ${branch}\nNo code changes were made. The conversation context below describes what was discussed.`;
   }
 
+  // Cap the diff so a huge session can't overflow the model context or cost.
+  const MAX_DIFF = 12000;
+  const clippedDiff =
+    diff.length > MAX_DIFF
+      ? diff.slice(0, MAX_DIFF) + "\n... [diff truncated]"
+      : diff;
+
   return `Session: ${branch}
 Files changed: ${stats.filesChanged}
 Lines: +${stats.insertions} / -${stats.deletions}
@@ -45,6 +52,6 @@ ${files.map((f) => `  - ${f}`).join("\n")}
 
 Code diff:
 \`\`\`diff
-${diff}
+${clippedDiff}
 \`\`\``;
 }
