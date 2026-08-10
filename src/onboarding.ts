@@ -73,11 +73,58 @@ const PROVIDERS: { id: string; name: string; desc: string; keyHint: string }[] =
   },
   {
     id: "ollama",
-    name: "Ollama (Local & Free)",
+    name: "Ollama (Local and Free)",
     desc: "Runs on your machine. No key needed. No cost.",
     keyHint: "none needed",
   },
 ];
+
+// Interactive arrow-key selector
+function selectProvider(rl: readline.Interface): Promise<number> {
+  return new Promise((resolve) => {
+    let selected = 0;
+
+    const render = () => {
+      // Clear previous render
+      for (let i = 0; i < PROVIDERS.length + 2; i++) {
+        process.stdout.write("\x1b[1A\x1b[2K");
+      }
+      for (let i = 0; i < PROVIDERS.length; i++) {
+        const p = PROVIDERS[i];
+        const prefix = i === selected ? "\x1b[1;36m❯\x1b[0m" : " ";
+        const name = i === selected ? `\x1b[1;37m${p.name}\x1b[0m` : `\x1b[2m${p.name}\x1b[0m`;
+        const desc = i === selected ? `\x1b[36m${p.desc}\x1b[0m` : `\x1b[2m${p.desc}\x1b[0m`;
+        process.stdout.write(`  ${prefix} ${name}\n     ${desc}\n`);
+      }
+      process.stdout.write("\n  \x1b[2m↑↓ to move, enter to select\x1b[0m\n");
+    };
+
+    const onData = (key: Buffer) => {
+      const k = key.toString();
+      if (k === "\x1b[A" || k === "k") {
+        // Up arrow
+        selected = selected > 0 ? selected - 1 : PROVIDERS.length - 1;
+        render();
+      } else if (k === "\x1b[B" || k === "j") {
+        // Down arrow
+        selected = selected < PROVIDERS.length - 1 ? selected + 1 : 0;
+        render();
+      } else if (k === "\r" || k === "\n") {
+        // Enter
+        process.stdin.removeListener("data", onData);
+        process.stdin.setRawMode(false);
+        resolve(selected + 1);
+      } else if (k === "\x03") {
+        // Ctrl+C
+        process.exit(0);
+      }
+    };
+
+    process.stdin.setRawMode(true);
+    process.stdin.on("data", onData);
+    render();
+  });
+}
 
 export async function runOnboarding(): Promise<SavedConfig> {
   console.log(`
@@ -87,35 +134,15 @@ export async function runOnboarding(): Promise<SavedConfig> {
   Choose how you want to power it:
 `);
 
-  for (let i = 0; i < PROVIDERS.length; i++) {
-    const p = PROVIDERS[i];
-    console.log(`  ${i + 1}. ${p.name}`);
-    console.log(`     ${p.desc}`);
-  }
-
-  // Single readline instance for the whole onboarding
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
-    terminal: true,
   });
 
-  const providerIndex = await new Promise<number>((resolve) => {
-    const ask = () => {
-      rl.question(`\n  Select provider [1-${PROVIDERS.length}]: `, (answer) => {
-        const n = parseInt(answer.trim(), 10);
-        if (isNaN(n) || n < 1 || n > PROVIDERS.length) {
-          console.log(`  Please enter a number between 1 and ${PROVIDERS.length}.`);
-          ask();
-        } else {
-          resolve(n);
-        }
-      });
-    };
-    ask();
-  });
-
+  const providerIndex = await selectProvider(rl);
   const selected = PROVIDERS[providerIndex - 1];
+
+  console.log(`\n  Selected: ${selected.name}`);
 
   // Get API key
   let apiKey = "";
@@ -135,8 +162,6 @@ export async function runOnboarding(): Promise<SavedConfig> {
       return { provider: "ollama", apiKey: "" };
     }
 
-    console.log("  Testing connection...");
-    // Skip actual test for now, just save
     console.log("  Key saved.");
   } else {
     console.log("\n  Using Ollama. No API key needed.");
