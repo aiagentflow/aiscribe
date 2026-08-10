@@ -15,6 +15,22 @@ export interface CapturedPrompt {
   tool: string;
 }
 
+export interface CapturedMessage {
+  role: "user" | "assistant" | "tool";
+  content: string;
+  timestamp: number;
+  toolName?: string;
+  toolCallId?: string;
+}
+
+export interface FullTranscript {
+  sessionId: string;
+  tool: string;
+  messages: CapturedMessage[];
+  filesRead: string[];
+  commandsRun: string[];
+}
+
 export interface CapturedSession {
   sessionId: string;
   tool: string;
@@ -97,15 +113,42 @@ function readPiSessionFile(filepath: string, sessionId: string): CapturedPrompt[
       const entry = JSON.parse(line);
       if (entry.type !== "message") continue;
       const msg = entry.message;
-      if (!msg || msg.role !== "user" || !msg.content) continue;
-      const text = extractPiText(msg.content);
-      if (text) {
-        prompts.push({
-          text,
-          timestamp: msg.timestamp || 0,
-          sessionId,
-          tool: "pi",
-        });
+      if (!msg || !msg.content) continue;
+
+      // Capture user messages
+      if (msg.role === "user") {
+        const text = extractPiText(msg.content);
+        if (text) {
+          prompts.push({
+            text,
+            timestamp: msg.timestamp || entry.timestamp || 0,
+            sessionId,
+            tool: "pi",
+          });
+        }
+      }
+
+      // Capture assistant thinking (append to context)
+      if (msg.role === "assistant") {
+        const thinking = extractPiThinking(msg.content);
+        if (thinking) {
+          prompts.push({
+            text: `[thinking] ${thinking.slice(0, 300)}`,
+            timestamp: msg.timestamp || entry.timestamp || 0,
+            sessionId,
+            tool: "pi",
+          });
+        }
+        // Capture tool calls as actions
+        const toolCalls = extractPiToolCalls(msg.content);
+        for (const tc of toolCalls) {
+          prompts.push({
+            text: `[tool:${tc.name}] ${tc.args?.command || tc.args?.path || JSON.stringify(tc).slice(0, 200)}`,
+            timestamp: msg.timestamp || entry.timestamp || 0,
+            sessionId,
+            tool: "pi",
+          });
+        }
       }
     } catch {}
   }
@@ -124,6 +167,22 @@ function extractPiText(content: Array<{ type: string; text?: string }>): string 
   if (!Array.isArray(content)) return "";
   const textBlock = content.find((c) => c.type === "text" && c.text);
   return textBlock?.text?.trim() || "";
+}
+
+function extractPiThinking(content: Array<{ type: string; thinking?: string }>): string {
+  if (!Array.isArray(content)) return "";
+  const thinkBlock = content.find((c) => c.type === "thinking" && c.thinking);
+  return thinkBlock?.thinking?.trim() || "";
+}
+
+function extractPiToolCalls(content: Array<Record<string, unknown>>): Array<{ name: string; args: Record<string, unknown> }> {
+  if (!Array.isArray(content)) return [];
+  return content
+    .filter((c) => c.type === "toolCall" && c.name && c.arguments)
+    .map((c) => ({
+      name: c.name as string,
+      args: c.arguments as Record<string, unknown>,
+    }));
 }
 
 function getClaudeSessionsDir(): string {
@@ -239,6 +298,96 @@ async function readAiderHistory(cwd: string): Promise<CapturedPrompt[]> {
   }
 
   return prompts;
+}
+
+// ── Full Transcript Capture ──
+
+/** Read the full session transcript from pi session file */
+export function readPiFullTranscript(cwd: string): FullTranscript | null {
+  const sessionFile = getPiSessionFile();
+  let filepath = sessionFile;
+
+  if (!filepath || !fs.existsSync(filepath)) {
+    // Find by project match
+    const sessionsDir = getPiSessionsDir();
+    if (!fs.existsSync(sessionsDir)) return null;
+
+    const projectName = path.basename(cwd);
+    const dirs = fs.readdirSync(sessionsDir, { withFileTypes: true })
+      .filter((d) => d.isDirectory());
+
+    let matchingDir: string | null = null;
+    for (const dir of dirs) {
+      const decoded = dir.name.replace(/^--/, "").replace(/--$/, "").replace(/-/g, "/");
+      if (cwd === decoded) { matchingDir = path.join(sessionsDir, dir.name); break; }
+    }
+    if (!matchingDir) {
+      for (const dir of dirs) {
+        if (dir.name.toLowerCase().includes(projectName.toLowerCase().replace(/\//g, "-"))) {
+          matchingDir = path.join(sessionsDir, dir.name);
+          break;
+        }
+      }
+    }
+
+    const latestFile = matchingDir ? getLatestSessionFile(matchingDir) : null;
+    if (!latestFile) return null;
+    filepath = latestFile;
+  }
+
+  const content = fs.readFileSync(filepath, "utf-8");
+  const sessionId = process.env.PI_SESSION_ID || path.basename(filepath, ".jsonl");
+  const messages: CapturedMessage[] = [];
+  const filesRead = new Set<string>();
+  const commandsRun = new Set<string>();
+
+  for (const line of content.trim().split("\n")) {
+    try {
+      const entry = JSON.parse(line);
+      if (entry.type !== "message") continue;
+      const msg = entry.message;
+      if (!msg || !msg.content) continue;
+
+      const ts = entry.timestamp ? new Date(entry.timestamp).getTime() : 0;
+
+      if (msg.role === "user") {
+        const text = extractPiText(msg.content);
+        if (text) messages.push({ role: "user", content: text, timestamp: ts });
+      } else if (msg.role === "assistant") {
+        const textParts: string[] = [];
+        const thinking = extractPiThinking(msg.content);
+        if (thinking) textParts.push(`[thinking] ${thinking.slice(0, 500)}`);
+        const text = extractPiText(msg.content);
+        if (text) textParts.push(text);
+        const toolCalls = extractPiToolCalls(msg.content);
+        for (const tc of toolCalls) {
+          textParts.push(`[tool:${tc.name}] ${JSON.stringify(tc.args).slice(0, 300)}`);
+          if (tc.name === "read") filesRead.add(String(tc.args.path || ""));
+          if (tc.name === "bash") commandsRun.add(String(tc.args.command || "").slice(0, 100));
+        }
+        if (textParts.length) messages.push({ role: "assistant", content: textParts.join("\n"), timestamp: ts });
+      } else if (msg.role === "toolResult") {
+        const text = extractPiText(msg.content);
+        if (text) messages.push({
+          role: "tool",
+          content: text.slice(0, 1000),
+          timestamp: ts,
+          toolName: (msg as Record<string, unknown>).toolName as string,
+          toolCallId: (msg as Record<string, unknown>).toolCallId as string,
+        });
+      }
+    } catch {}
+  }
+
+  if (messages.length === 0) return null;
+
+  return {
+    sessionId,
+    tool: "pi",
+    messages,
+    filesRead: [...filesRead],
+    commandsRun: [...commandsRun],
+  };
 }
 
 // ── Main API ──

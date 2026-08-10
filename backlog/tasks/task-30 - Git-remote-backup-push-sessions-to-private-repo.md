@@ -1,7 +1,7 @@
 ---
 id: TASK-30
 title: 'Git remote backup: push sessions to private repo'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-08 17:00'
 labels: []
@@ -18,7 +18,7 @@ Configure a private git repo as backup. Every aiscribe log auto-pushes the sessi
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 aiscribe remote set <git-url>: configure backup repo
-- [ ] #2 aiscribe remote status: show remote config
+- [x] #2 aiscribe remote status: show remote config
 - [ ] #3 Auto-clone/pull remote on first use
 - [ ] #4 Organize by project: repo/project-name/sessions/
 - [ ] #5 Auto-commit + push after each aiscribe log

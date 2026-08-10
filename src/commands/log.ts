@@ -2,7 +2,7 @@ import { getDiff, getBranchName } from "../git";
 import { generateSummary } from "../llm";
 import { SYSTEM_PROMPT, buildUserPrompt } from "../prompt";
 import { saveSession } from "../storage";
-import { captureContext, formatContextForPrompt } from "../context/capture";
+import { captureContext, formatContextForPrompt, readPiFullTranscript } from "../context/capture";
 import { writeContextFile } from "./context";
 import * as path from "path";
 import {
@@ -74,6 +74,7 @@ export async function log(args: string[]): Promise<void> {
     let contextTool: string | null = null;
     let contextSessionCount = 0;
     let contextPromptCount = 0;
+    let fullTranscript: import("../context/capture").FullTranscript | null = null;
 
     if (withContext) {
       if (!isQuiet && !isJson) console.log(boxMid("context"));
@@ -84,6 +85,11 @@ export async function log(args: string[]): Promise<void> {
       contextSessionCount = context.sessionCount;
       contextPromptCount = context.prompts.length;
       contextSection = formatContextForPrompt(context);
+
+      // Capture full transcript if available (pi sessions)
+      try {
+        fullTranscript = readPiFullTranscript(cwd);
+      } catch {}
 
       if (!isQuiet && !isJson) {
         console.log(boxLine("Tool", contextTool || gray("none detected")));
@@ -123,6 +129,34 @@ export async function log(args: string[]): Promise<void> {
     if (contextSection) {
       fullSummary += "\n\n## Conversation Log\n\n";
       fullSummary += contextSection;
+    }
+
+    // Append full transcript (files read, commands run) from pi
+    if (fullTranscript && fullTranscript.messages.length > 0) {
+      fullSummary += "\n\n## Full Session Transcript\n\n";
+      fullSummary += `Total messages: ${fullTranscript.messages.length}\n\n`;
+
+      if (fullTranscript.filesRead.length > 0) {
+        fullSummary += "### Files Read\n\n";
+        for (const f of fullTranscript.filesRead) {
+          fullSummary += `- \`${f}\`\n`;
+        }
+        fullSummary += "\n";
+      }
+
+      if (fullTranscript.commandsRun.length > 0) {
+        fullSummary += "### Commands Run\n\n";
+        for (const c of fullTranscript.commandsRun) {
+          fullSummary += `- \`${c}\`\n`;
+        }
+        fullSummary += "\n";
+      }
+
+      fullSummary += "### Conversation\n\n";
+      for (const msg of fullTranscript.messages) {
+        const prefix = msg.role === "user" ? "**You**" : msg.role === "assistant" ? "**Assistant**" : `**Tool (${msg.toolName || "unknown"})**`;
+        fullSummary += `${prefix}: ${msg.content.slice(0, 500)}\n\n`;
+      }
     }
 
     if (spinner) spinner.stop(isFull ? "Session captured" : "Summary generated");
