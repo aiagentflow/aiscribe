@@ -73,20 +73,43 @@ export async function watch(args?: string[]): Promise<void> {
     }
     console.log("");
   } else {
-    console.log(gray("  No active sessions. Waiting..."));
-    console.log(gray("  Start a Claude Code session to see activity."));
+    console.log(gray("  No active sessions. Waiting for pi or Claude Code..."));
     console.log("");
   }
 
-  // Poll for completed sessions
+  // Poll for new/updated sessions
+  let lastSessionIds = new Set(initial.activeSessions.map(s => s.sessionId));
   const timer = setInterval(async () => {
-    const newlyCompleted = getNewlyCompletedSessions();
+    const status = getSessionStatus();
+    const currentIds = new Set(status.activeSessions.map(s => s.sessionId));
 
+    // New sessions started
+    for (const s of status.activeSessions) {
+      if (!lastSessionIds.has(s.sessionId)) {
+        console.log(`\n  ${yellow("●")} New session detected: ${bold(s.name)} (${s.tool})`);
+        console.log(`  ${dim(s.cwd)}`);
+      }
+    }
+
+    // Sessions that ended (were active, now gone from active list)
+    for (const id of lastSessionIds) {
+      if (!currentIds.has(id)) {
+        const recent = status.recentSessions.find(s => s.sessionId === id);
+        const name = recent?.name || id;
+        console.log(`\n  ${green("✓")} Session ended: ${bold(name)}`);
+        console.log(`  ${dim("Run 'aiscribe log -c' to capture this session.")}`);
+      }
+    }
+
+    lastSessionIds = currentIds;
+
+    // Also check newly completed Claude Code sessions
+    const newlyCompleted = getNewlyCompletedSessions();
     for (const s of newlyCompleted) {
-      const dur = Math.round((s.updatedAt - s.startedAt) / 60000);
-      console.log(`\n  ${green("✓")} Session completed: ${bold(s.name)}`);
-      console.log(`  ${dim(`Duration: ${dur} min | Prompts: ${s.prompts.length}`)}`);
-      console.log(`  ${dim("Run 'aiscribe log -c' to capture this session.")}`);
+      if (!currentIds.has(s.sessionId)) {
+        console.log(`\n  ${green("✓")} Session completed: ${bold(s.name)} (${s.tool})`);
+        console.log(`  ${dim("Run 'aiscribe log -c' to capture this session.")}`);
+      }
     }
   }, interval);
 
