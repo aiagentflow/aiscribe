@@ -21,6 +21,8 @@ export interface CapturedMessage {
   timestamp: number;
   toolName?: string;
   toolCallId?: string;
+  /** 1-based conversation turn; a new turn begins at each user message. */
+  turn?: number;
 }
 
 export interface FullTranscript {
@@ -481,4 +483,84 @@ export function formatContextForPrompt(context: ContextResult): string {
     }
   }
   return output;
+}
+
+/**
+ * Number conversation turns without mutating the input. A new turn begins at
+ * each user message; everything until the next user message belongs to it.
+ */
+export function assignTurnNumbers(messages: CapturedMessage[]): CapturedMessage[] {
+  let turn = 0;
+  return messages.map((m) => {
+    if (m.role === "user") turn += 1;
+    return { ...m, turn };
+  });
+}
+
+/**
+ * Render a concise, turn-numbered transcript for the LLM so generated
+ * summaries can cite the exact turns that motivated each chunk/decision.
+ */
+export function formatTranscriptForPrompt(
+  messages: CapturedMessage[],
+  maxTurns = 40
+): string {
+  const numbered = assignTurnNumbers(messages);
+  if (numbered.length === 0) return "";
+
+  const out: string[] = [
+    "## Numbered Conversation",
+    "A turn starts at each user message. Cite these numbers as sources (e.g. Turns: 2-3).",
+  ];
+
+  let lastTurn = 0;
+  for (const m of numbered) {
+    const turn = m.turn || 0;
+    if (turn > maxTurns) {
+      out.push(`\n... [conversation continues past Turn ${maxTurns}]`);
+      break;
+    }
+    if (turn !== lastTurn) {
+      lastTurn = turn;
+      out.push(`\n### Turn ${turn}`);
+    }
+    const time = new Date(m.timestamp).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+    if (m.role === "user") {
+      out.push(`**You** _${time}_\n${m.content.slice(0, 500)}`);
+    } else if (m.role === "assistant") {
+      out.push(`**Assistant** _${time}_\n${m.content.slice(0, 400)}`);
+    } else {
+      out.push(`_${m.toolName || "tool"}_ _${time}_\n\`${m.content.slice(0, 200)}\``);
+    }
+  }
+  return out.join("\n");
+}
+
+/**
+ * Render the full turn-numbered transcript for storage. Unlike the prompt
+ * variant this keeps longer excerpts, so the "Turns:" references in the
+ * summary resolve to readable content in the saved session file.
+ */
+export function formatTranscriptForStorage(messages: CapturedMessage[]): string {
+  const numbered = assignTurnNumbers(messages);
+  if (numbered.length === 0) return "";
+
+  const out: string[] = [];
+  let lastTurn = 0;
+  for (const m of numbered) {
+    const turn = m.turn || 0;
+    if (turn !== lastTurn) {
+      lastTurn = turn;
+      out.push(`\n### Turn ${turn}\n`);
+    }
+    const time = new Date(m.timestamp).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+    if (m.role === "user") {
+      out.push(`**You** _${time}_\n\n${m.content.slice(0, 2000)}\n`);
+    } else if (m.role === "assistant") {
+      out.push(`**Assistant** _${time}_\n\n${m.content.slice(0, 2000)}\n`);
+    } else {
+      out.push(`_${m.toolName || "tool"}_ _${time}_\n\n\`\`\`\n${m.content.slice(0, 1000)}\n\`\`\`\n`);
+    }
+  }
+  return out.join("\n");
 }
