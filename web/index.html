@@ -80,6 +80,10 @@ body{font-family:'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 .detail-body ul,.detail-body ol{padding-left:1.5rem;margin:10px 0}
 .detail-body li{margin:4px 0}
 .detail-body blockquote{border-left:3px solid var(--coral);padding-left:16px;margin:14px 0;color:var(--fg-2)}
+.ref-link{color:var(--coral-light);text-decoration:none;border-bottom:1px dashed rgba(255,99,84,0.45);cursor:pointer}
+.ref-link:hover{color:var(--coral)}
+.flash{animation:ais-flash 1.4s ease}
+@keyframes ais-flash{0%{background:var(--coral-glow-strong);border-radius:6px}100%{background:transparent}}
 
 .chat-user{background:var(--coral-glow);border:1px solid rgba(255,99,84,0.15);border-radius:12px;padding:14px 18px;margin:12px 0}
 .chat-user strong{color:var(--coral-light)}
@@ -204,7 +208,10 @@ function showList(){document.getElementById("list-view").style.display="block";d
 
 window.addEventListener("scroll",function(){var b=document.getElementById("scrollTop");if(window.scrollY>400)b.classList.add("visible");else b.classList.remove("visible")});
 
-function md(t){return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/^### (.+)$/gm,"<h3>$1</h3>").replace(/^## (.+)$/gm,"<h2>$1</h2>").replace(/^# (.+)$/gm,"<h1>$1</h1>").replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/`([^`]+)`/g,"<code>$1</code>").replace(/```(\w*)\n([\s\S]*?)```/g,"<pre><code>$2</code></pre>").replace(/^- (.+)$/gm,"<li>$1</li>").replace(/\n\n/g,"<br><br>")}
+function md(t){var h=t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/^### (.+)$/gm,"<h3>$1</h3>").replace(/^## (.+)$/gm,"<h2>$1</h2>").replace(/^# (.+)$/gm,"<h1>$1</h1>").replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/```(\w*)\n([\s\S]*?)```/g,"<pre><code>$2</code></pre>").replace(/`([^`]+)`/g,"<code>$1</code>").replace(/^- (.+)$/gm,"<li>$1</li>").replace(/\n\n/g,"<br><br>");return linkify(h)}
+function slug(p){return p.replace(/[^\w.\/-]/g,"")}
+function linkify(h){h=h.replace(/<h3>Turn (\d+)<\/h3>/g,'<h3 id="turn-$1">Turn $1</h3>');h=h.replace(/diff --git a\/([^\s<]+) b\/([^\s<]+)/g,function(m,a,b){return '<span id="diff-'+slug(b)+'" class="diff-anchor"></span>diff --git a/'+a+' b/'+b});var hn=0;h=h.replace(/@@([^<\n]*?)@@/g,function(m){hn++;return '<span id="hunk-'+hn+'" class="diff-anchor"></span>'+m});h=h.replace(/Turns:\s*([^<\n]+)/g,function(m,v){var d=v.match(/\d+/g);if(!d||!d.length)return m;return 'Turns: <a href="#turn-'+d[0]+'" class="ref-link" onclick="return jumpTo(\'turn-'+d[0]+'\')">'+v.trim()+'</a>'});h=h.replace(/Files:\s*([^<\n]+)/g,function(m,v){var links=v.split(",").map(function(p){p=p.trim();if(!p)return p;return '<a href="#diff-'+slug(p)+'" class="ref-link" onclick="return jumpTo(\'diff-'+slug(p)+'\')">'+p+'</a>'});return 'Files: '+links.join(', ')});return h}
+function jumpTo(id){var e=document.getElementById(id);if(e){e.scrollIntoView({behavior:'smooth',block:'start'});e.classList.add('flash');setTimeout(function(){e.classList.remove('flash')},1400)}return false}
 function esc(s){return(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
 load();
 </script>
