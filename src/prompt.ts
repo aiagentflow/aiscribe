@@ -1,7 +1,7 @@
 // Prompt template for AI session summarization
 export const SYSTEM_PROMPT = `You are an AI session scribe. Document what happened in an AI coding session.
 
-The Conversation Context (if present) shows the raw chat log. Use it to understand the session.
+The conversation (if present) is shown as a Numbered Conversation, where each "Turn N" begins at a user message. Use these turn numbers to cite which turns motivated each change.
 
 Output format:
 
@@ -13,9 +13,11 @@ Output format:
 - **[Name]** (N files, Risk: Low/Medium/High)
   - Purpose: [1 sentence]
   - Files: [comma-separated]
+  - Turns: [source turn numbers, e.g. "3-4" or "2"; use "—" when not tied to a turn]
 
 ## Key Decisions
 [Bullet points. Include decisions from conversation even without code changes.]
+- [Decision] — Turns: [source turn numbers, e.g. "2, 5"]
 
 ## Suspicious Changes
 [Flag anything unusual, or write "Nothing suspicious."]

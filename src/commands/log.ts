@@ -2,7 +2,14 @@ import { getDiff, getBranchName } from "../git";
 import { generateSummary } from "../llm";
 import { SYSTEM_PROMPT, buildUserPrompt } from "../prompt";
 import { saveSession } from "../storage";
-import { captureContext, formatContextForPrompt, readPiFullTranscript } from "../context/capture";
+import {
+  captureContext,
+  formatContextForPrompt,
+  readPiFullTranscript,
+  assignTurnNumbers,
+  formatTranscriptForPrompt,
+  formatTranscriptForStorage,
+} from "../context/capture";
 import type { EmbeddingData } from "../embeddings";
 import { writeContextFile } from "./context";
 import { hasEnvConfig, loadConfig } from "../onboarding";
@@ -126,6 +133,9 @@ export async function log(args: string[]): Promise<void> {
           const cutoff = sinceDate.getTime();
           fullTranscript.messages = fullTranscript.messages.filter(m => m.timestamp >= cutoff);
         }
+        if (fullTranscript) {
+          fullTranscript.messages = assignTurnNumbers(fullTranscript.messages);
+        }
       } catch {}
 
       if (!isQuiet && !isJson) {
@@ -146,7 +156,13 @@ export async function log(args: string[]): Promise<void> {
     }
 
     const userPrompt = buildUserPrompt(branch, diff.files, diff.stats, diff.diff);
-    const fullUserPrompt = contextSection ? userPrompt + "\n" + contextSection : userPrompt;
+    // Prefer the turn-numbered transcript for the LLM so summaries can cite
+    // exact turns; fall back to the flattened prompt log for other tools.
+    const llmContextSection =
+      fullTranscript && fullTranscript.messages.length > 0
+        ? formatTranscriptForPrompt(fullTranscript.messages)
+        : contextSection;
+    const fullUserPrompt = llmContextSection ? userPrompt + "\n" + llmContextSection : userPrompt;
 
     // Allow context-only sessions (no git diff but AI prompts captured)
     const hasContent = diff.diff.trim() || contextSection;
@@ -162,9 +178,15 @@ export async function log(args: string[]): Promise<void> {
       ? buildFullSummary(branch, diff, contextSection)
       : await generateSummary(SYSTEM_PROMPT, fullUserPrompt);
 
-    // Append raw conversation log
+    // Append the raw conversation log. In exchange mode the individual
+    // messages (with inline turn markers) are appended per file below, so here
+    // we keep the flattened overview; otherwise we store the full turn-numbered
+    // transcript so "Turns:" references resolve to visible anchors.
     let fullSummary = summary;
-    if (contextSection) {
+    if (fullTranscript && fullTranscript.messages.length > 0 && batchMode !== "exchange") {
+      fullSummary += "\n\n## Conversation Log\n\n";
+      fullSummary += formatTranscriptForStorage(fullTranscript.messages);
+    } else if (contextSection) {
       fullSummary += "\n\n## Conversation Log\n\n";
       fullSummary += contextSection;
     }
@@ -210,6 +232,9 @@ export async function log(args: string[]): Promise<void> {
           }
           exchangeCount++;
         }
+        if (isNewExchange && msg.turn) {
+          currentBatch += `\n### Turn ${msg.turn}\n`;
+        }
         const time = new Date(msg.timestamp).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
         if (msg.role === "user") {
           currentBatch += `<div class="chat-user">\n\n**You** _${time}_\n\n${detectAndFormatCode(msg.content.slice(0, 2000))}\n\n</div>\n\n`;
@@ -247,15 +272,25 @@ export async function log(args: string[]): Promise<void> {
 
     // Save each batch. Only the first file carries the embedding; extra
     // parts (exchanges) are saved without one to avoid duplicate matches.
+    // Traceability evidence: store the raw diff so chunk "Files:" references
+    // resolve to actual hunks. Only the primary file carries it (avoid bloat
+    // across exchange files); full mode already embeds it via buildFullSummary.
+    const diffSection = !effectiveFull && diff.diff.trim()
+      ? "\n\n## Git Diff\n\n```diff\n" +
+        (diff.diff.length > 30000 ? diff.diff.slice(0, 30000) + "\n... [diff truncated]" : diff.diff) +
+        "\n```\n"
+      : "";
+
     const filepaths: string[] = [];
     for (let i = 0; i < batches.length; i++) {
       const suffix = batches.length > 1 && i > 0
         ? `-exchange${i + 1}`
         : undefined;
       const batchName = suffix ? `${sessionName || branch}${suffix}` : (sessionName || undefined);
+      const content = i === 0 ? batches[i] + diffSection : batches[i];
       const fp = saveSession(
         branch,
-        batches[i],
+        content,
         diff.stats,
         { tool: contextTool, customName: batchName, files: i === 0 ? diff.files : [] },
         i === 0 ? embedding : null
