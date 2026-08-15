@@ -13,11 +13,11 @@ Output format:
 - **[Name]** (N files, Risk: Low/Medium/High)
   - Purpose: [1 sentence]
   - Files: [comma-separated]
-  - Turns: [source turn numbers, e.g. "3-4" or "2"; use "—" when not tied to a turn]
+  - Turns: [turn range, e.g. "2-4"; use "—" when not tied to a turn]
 
 ## Key Decisions
-[Bullet points. Include decisions from conversation even without code changes.]
-- [Decision] — Turns: [source turn numbers, e.g. "2, 5"]
+[One named bullet per decision. Each is a self-contained unit covering its full discussion, including multi-turn decisions and decisions with no code change.]
+- **[Short name]** — Turns: [turn range, e.g. "1-3" or "4"]
 
 ## Suspicious Changes
 [Flag anything unusual, or write "Nothing suspicious."]
