@@ -24,11 +24,13 @@ aiscribe log --quiet        # Print only the file path
 
 **What it does:**
 1. Reads staged and unstaged git diff
-2. Optionally captures prompt history from Claude Code/Codex/Aider
+2. Optionally captures the full conversation (pi: prompts, responses, tool calls; Claude Code, Codex, Aider: prompts)
 3. Sends to LLM for structured summarization
 4. Saves as markdown in `.aiscribe/sessions/`
 
 **Output:** Markdown file at `.aiscribe/sessions/YYYY-MM-DD-branch-name.md`
+
+The summary groups changes into **Chunks** and lists **Key Decisions**, each citing the conversation **turns** and **files** that motivated it. The raw conversation and git diff are stored in the same file.
 
 ---
 

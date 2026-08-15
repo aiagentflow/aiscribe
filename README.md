@@ -61,6 +61,7 @@ No onboarding. No API key required. Works out of the box. Add an LLM later for A
 
 - Zero config: `aiscribe log` works immediately, no API key needed
 - Full conversation capture: prompts, responses, tool calls, files read, commands run
+- Traceable summaries: every chunk and decision cites the exact chat turns and files that motivated it
 - Chat-style formatting in session logs with role-based sections
 - Built-in web UI (`aiscribe server`): search, download, copy, PDF export
 - Side-by-side markdown editor with live preview and PDF export (`/pdf.html`)
@@ -89,10 +90,12 @@ Implemented Stripe refund processing with webhook support...
 
 ## Chunks
 - Payment API (6 files, Medium risk)
+  - Turns: 2-4
 - Database migration (2 files, Low risk)
+  - Turns: 5
 
 ## Key Decisions
-- Used Stripe webhooks instead of polling
+- Used Stripe webhooks instead of polling — Turns: 3
 
 ## Suspicious Changes
 - auth.ts changed but unrelated to refunds
@@ -171,7 +174,7 @@ Spins up PostgreSQL + pgvector for semantic search and session persistence.
 
 1. You finish an AI coding session (any tool)
 2. Run `aiscribe log` — it reads your git diff
-3. Optionally captures prompt history from Claude Code/Codex/Aider
+3. Optionally captures the full conversation (pi: prompts, responses, tool calls; Claude Code, Codex, Aider: prompts)
 4. Sends to your chosen LLM for summarization
 5. Saves a structured markdown file to `.aiscribe/sessions/`
 6. Updates `.aiscribe/index.json` for quick lookups
@@ -181,7 +184,7 @@ Spins up PostgreSQL + pgvector for semantic search and session persistence.
 After 2 weeks of AI coding sessions, you have no memory of what changed or why. AIScribe fixes that by creating a permanent, searchable journal of every session.
 
 - **Never lose context**: search "payment" to find all sessions that touched payment code
-- **Understand decisions**: every session captures the "why" not just the "what"
+- **Understand decisions**: every session captures the "why", with each decision linked to the exact chat turns and files that caused it
 - **Catch surprises**: AIScribe flags suspicious changes (files changed outside the main domain)
 - **Team visibility**: commit `.aiscribe/` to your repo and your team sees every AI decision
 
