@@ -1,7 +1,7 @@
 {
   "name": "aiscribe",
   "version": "1.2.23",
-  "description": "Your AI's scribe. Every session, recorded, backed up. One command journals your AI coding session into a structured, searchable log and auto-pushes to a private GitHub repo.",
+  "description": "Your AI's scribe. Every session, recorded, traceable, backed up. One command journals git diffs and full AI conversations into a searchable log, links every change back to the chat that caused it, and auto-pushes to a private GitHub repo.",
   "main": "dist/index.js",
   "bin": {
     "aiscribe": "dist/index.js"
