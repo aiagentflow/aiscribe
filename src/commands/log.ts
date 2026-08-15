@@ -5,7 +5,7 @@ import { saveSession } from "../storage";
 import {
   captureContext,
   formatContextForPrompt,
-  readPiFullTranscript,
+  readFullTranscript,
   assignTurnNumbers,
   formatTranscriptForPrompt,
   formatTranscriptForStorage,
@@ -126,9 +126,9 @@ export async function log(args: string[]): Promise<void> {
       contextSessionCount = context.sessionCount;
       contextPromptCount = context.prompts.length;
 
-      // Capture full transcript if available (pi sessions), filtered by date
+      // Capture full transcript if available (pi or Claude Code), filtered by date
       try {
-        fullTranscript = readPiFullTranscript(cwd);
+        fullTranscript = readFullTranscript(cwd, contextTool);
         if (fullTranscript && sinceDate) {
           const cutoff = sinceDate.getTime();
           fullTranscript.messages = fullTranscript.messages.filter(m => m.timestamp >= cutoff);
