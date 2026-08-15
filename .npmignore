@@ -5,3 +5,5 @@ backlog/
 .aiscribe/
 CLAUDE.md
 REVIEW.md
+scripts/
+*.fuse_hidden*
