@@ -95,7 +95,7 @@ Implemented Stripe refund processing with webhook support...
   - Turns: 5
 
 ## Key Decisions
-- Used Stripe webhooks instead of polling — Turns: 3
+- **Webhooks over polling** — Turns: 3-4
 
 ## Suspicious Changes
 - auth.ts changed but unrelated to refunds
