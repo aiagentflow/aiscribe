@@ -146,11 +146,11 @@ export AISCRIBE_PROVIDER=ollama      # Free & local
 | Tool | Conversation | Git Diff |
 |------|-------------|----------|
 | **pi** | Full (prompts + responses + tool calls) | Yes |
-| **Claude Code** | Prompts only* | Yes |
+| **Claude Code** | Full (prompts + responses + tool calls) | Yes |
 | **Codex** | Prompts only* | Yes |
 | **Aider** | Prompts only* | Yes |
 
-*These tools don't persist assistant responses to disk. See [docs/SUPPORTED-TOOLS.md](docs/SUPPORTED-TOOLS.md) for details.
+*Codex and Aider don't persist assistant responses to disk. See [docs/SUPPORTED-TOOLS.md](docs/SUPPORTED-TOOLS.md) for details.
 
 ## Web UI
 
@@ -174,7 +174,7 @@ Spins up PostgreSQL + pgvector for semantic search and session persistence.
 
 1. You finish an AI coding session (any tool)
 2. Run `aiscribe log` — it reads your git diff
-3. Optionally captures the full conversation (pi: prompts, responses, tool calls; Claude Code, Codex, Aider: prompts)
+3. Optionally captures the full conversation (pi and Claude Code: prompts, responses, tool calls; Codex, Aider: prompts)
 4. Sends to your chosen LLM for summarization
 5. Saves a structured markdown file to `.aiscribe/sessions/`
 6. Updates `.aiscribe/index.json` for quick lookups

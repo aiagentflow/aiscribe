@@ -224,6 +224,103 @@ async function readClaudeHistory(cwd: string): Promise<CapturedPrompt[]> {
   return prompts;
 }
 
+// ── Claude Code full transcript ──
+
+/**
+ * Claude Code encodes a project path as a directory name: a leading "-"
+ * with "/" replaced by "-". Matches ~/.claude/projects/<encoded>/.
+ */
+export function encodeClaudeDir(cwd: string): string {
+  return "-" + cwd.replace(/^\//, "").replace(/\//g, "-");
+}
+
+function claudeToolResultText(content: unknown): string {
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return content
+      .map((b) => {
+        if (typeof b === "string") return b;
+        const text = (b as Record<string, unknown>)?.text;
+        return typeof text === "string" ? text : "";
+      })
+      .join("\n");
+  }
+  return "";
+}
+
+/**
+ * Read the full Claude Code session transcript (prompts, responses, tool
+ * calls) for a project. Claude stores these under ~/.claude/projects/.
+ */
+export function readClaudeFullTranscript(cwd: string, homeDir?: string): FullTranscript | null {
+  const projectsDir = path.join(homeDir || os.homedir(), ".claude", "projects");
+  const projectDir = path.join(projectsDir, encodeClaudeDir(cwd));
+  if (!fs.existsSync(projectDir)) return null;
+
+  // Most recently modified session file wins.
+  const files = fs.readdirSync(projectDir)
+    .filter((f) => f.endsWith(".jsonl"))
+    .map((f) => ({ name: f, mtime: fs.statSync(path.join(projectDir, f)).mtimeMs }))
+    .sort((a, b) => b.mtime - a.mtime);
+  if (files.length === 0) return null;
+  const filepath = path.join(projectDir, files[0].name);
+
+  const messages: CapturedMessage[] = [];
+  const filesRead = new Set<string>();
+  const commandsRun = new Set<string>();
+  let sessionId = path.basename(filepath, ".jsonl");
+
+  for (const line of fs.readFileSync(filepath, "utf-8").split("\n")) {
+    if (!line.trim()) continue;
+    let entry: any; // JSON.parse returns any; shape validated below
+    try { entry = JSON.parse(line); } catch { continue; }
+    if (entry.type !== "user" && entry.type !== "assistant") continue;
+    const msg = entry.message;
+    if (!msg) continue;
+
+    const ts = entry.timestamp ? new Date(entry.timestamp).getTime() : 0;
+    if (entry.sessionId) sessionId = entry.sessionId;
+
+    if (entry.type === "user") {
+      if (typeof msg.content === "string") {
+        const text = (msg.content as string).trim();
+        // Skip Claude's synthetic meta messages (session naming reminders).
+        if (text && !entry.isMeta && !text.startsWith("<system-reminder")) {
+          messages.push({ role: "user", content: text.slice(0, 2000), timestamp: ts });
+        }
+      } else if (Array.isArray(msg.content)) {
+        for (const b of msg.content) {
+          if (b?.type === "tool_result") {
+            const t = claudeToolResultText(b.content);
+            if (t) messages.push({ role: "tool", content: t.slice(0, 1000), timestamp: ts, toolName: "tool_result" });
+          } else if (b?.type === "text" && typeof b.text === "string") {
+            messages.push({ role: "user", content: b.text.slice(0, 2000), timestamp: ts });
+          }
+        }
+      }
+    } else if (Array.isArray(msg.content)) {
+      // assistant
+      const parts: string[] = [];
+      for (const b of msg.content) {
+        if (b?.type === "thinking" && typeof b.thinking === "string") {
+          parts.push("[thinking] " + b.thinking.slice(0, 500));
+        } else if (b?.type === "text" && typeof b.text === "string") {
+          parts.push(b.text);
+        } else if (b?.type === "tool_use") {
+          const name = typeof b.name === "string" ? b.name : "tool";
+          parts.push("[tool:" + name + "] " + JSON.stringify(b.input || {}).slice(0, 300));
+          if (name === "Read" && b.input?.file_path) filesRead.add(String(b.input.file_path));
+          if (name === "Bash" && b.input?.command) commandsRun.add(String(b.input.command).slice(0, 100));
+        }
+      }
+      if (parts.length) messages.push({ role: "assistant", content: parts.join("\n"), timestamp: ts });
+    }
+  }
+
+  if (messages.length === 0) return null;
+  return { sessionId, tool: "claude-code", messages, filesRead: [...filesRead], commandsRun: [...commandsRun] };
+}
+
 // ── Codex (OpenAI) ──
 
 function getCodexHistoryPath(): string {
@@ -394,6 +491,17 @@ export function readPiFullTranscript(cwd: string): FullTranscript | null {
     filesRead: [...filesRead],
     commandsRun: [...commandsRun],
   };
+}
+
+/**
+ * Read the full transcript for the detected tool, falling back across tools
+ * when the preferred source is unavailable.
+ */
+export function readFullTranscript(cwd: string, tool: string | null): FullTranscript | null {
+  if (tool === "claude-code") {
+    return readClaudeFullTranscript(cwd) || readPiFullTranscript(cwd);
+  }
+  return readPiFullTranscript(cwd) || readClaudeFullTranscript(cwd);
 }
 
 // ── Main API ──

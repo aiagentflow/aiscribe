@@ -7,15 +7,15 @@ AIScribe captures conversation context from the following AI coding tools. Detec
 | Tool | What's Captured | Source |
 |------|----------------|--------|
 | **pi (Harness)** | Full conversation: user prompts, assistant responses, tool calls, timestamps | `~/.pi/agent/sessions/` |
+| **Claude Code** | Full conversation: user prompts, assistant responses, tool calls, timestamps | `~/.claude/projects/<project>/` |
 
-pi (the Harness coding agent) is the only tool that stores complete session transcripts on disk. Every message (user, assistant, tool calls) is captured with timestamps.
+pi and Claude Code store complete session transcripts on disk. Every message (user, assistant, tool calls) is captured with timestamps.
 
 ## Partial Support (user prompts only)
 
 | Tool | What's Captured | Source | Limitation |
 |------|----------------|--------|------------|
-| **Claude Code** | User prompts only | `~/.claude/history.jsonl` | Claude Code does not persist assistant responses or tool calls. Only the prompts you typed are stored. |
-| **Codex (OpenAI)** | User prompts only | `~/.codex/history.jsonl` | Same limitation as Claude Code. |
+| **Codex (OpenAI)** | User prompts only | `~/.codex/history.jsonl` | Does not persist assistant responses or tool calls. Only the prompts you typed are stored. |
 | **Aider** | User prompts only | `.aider.chat.history.md` | Same limitation. |
 
 ## Not Supported
@@ -28,16 +28,14 @@ pi (the Harness coding agent) is the only tool that stores complete session tran
 | **Gemini CLI** | Detected but no history reader implemented yet. Sessions may exist in `~/.gemini/`. |
 | **Continue.dev** | Stores in local SQLite database. Reader not yet implemented. |
 
-## Why Claude Code Shows Limited Data
+## How Claude Code Captures Full Conversations
 
-Claude Code stores session metadata in `~/.claude/sessions/*.json` and user prompts in `~/.claude/history.jsonl`. However, Claude Code does NOT write assistant responses or tool call results to any persistent file on disk. This data only exists during an active session in memory.
+Claude Code writes every message to `~/.claude/projects/<encoded-project-path>/<session-id>.jsonl`. AIScribe reads the most recently modified session file for the current project and reconstructs the conversation: user prompts, assistant responses (text and thinking), and tool calls (Read, Bash, Edit, Write) with timestamps and file/command metadata.
 
 When AIScribe captures a Claude Code session, you get:
 - Git diff (what files changed)
-- Your prompts (what you asked Claude)
-- LLM-generated summary connecting the two
-
-You do NOT get Claude's responses or tool calls. This is a Claude Code limitation, not an AIScribe one.
+- Full conversation (your prompts, Claude's responses, tool calls)
+- LLM-generated summary connecting the two, with each decision citing its source turns
 
 ## How pi Captures Full Conversations
 
